@@ -283,7 +283,7 @@ export default function DocumentUploader({
         <div className="flex items-center gap-2 px-5 py-3 border-t border-slate-200 bg-slate-50 rounded-b-xl">
           <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" aria-hidden="true" />
           <p className="text-xs text-slate-600">
-            Files are encrypted at rest and visible only to authorised loan officers.
+            Files are shared only with the authorised loan officers reviewing your application.
           </p>
         </div>
       </div>

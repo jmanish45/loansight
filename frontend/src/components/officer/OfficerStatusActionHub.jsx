@@ -274,10 +274,10 @@ export default function OfficerStatusActionHub({
         onClick={onDelete}
         disabled={updating}
         className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 rounded-xl transition-all duration-200 border border-transparent hover:border-red-200 cursor-pointer disabled:opacity-50"
-        title="Delete Application Permanently"
+        title="Archive application (recoverable — audit history is preserved)"
       >
         <Trash2 className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">Delete</span>
+        <span className="hidden sm:inline">Archive</span>
       </button>
     </div>
   );

@@ -7,7 +7,7 @@ export const officerService = {
   
   getApplicationById: (id) => api.get(`/officer/applications/${id}`),
 
-  updateApplicationStatus: (id, status) => api.patch(`/officer/applications/${id}/status`, { status }),
+  updateApplicationStatus: (id, status, reason) => api.patch(`/officer/applications/${id}/status`, { status, reason }),
 
   deleteApplication: (id) => api.delete(`/officer/applications/${id}`),
 

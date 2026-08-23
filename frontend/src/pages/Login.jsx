@@ -54,8 +54,8 @@ export default function Login() {
     handleSubmit,
   } = useForm({
     initialValues: {
-      email: 'rohit.sharma@example.com',
-      password: 'Password123!',
+      email: '',
+      password: '',
     },
     validationRules,
     onSubmit: async (data) => {
@@ -67,18 +67,12 @@ export default function Login() {
 
   const handleSwitchToOfficer = () => {
     setActivePortal('officer');
-    setValues({
-      email: 'officer@loanlens.ai',
-      password: 'Password123!',
-    });
+    setValues({ email: '', password: '' });
   };
 
   const handleSwitchToApplicant = () => {
     setActivePortal('applicant');
-    setValues({
-      email: 'rohit.sharma@example.com',
-      password: 'Password123!',
-    });
+    setValues({ email: '', password: '' });
   };
 
   return (
@@ -176,31 +170,8 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Bottom Section: Live Activity Ticker & Micro-Trust Badges */}
+        {/* Bottom Section: Micro-Trust Badges */}
         <div className="relative z-10 pt-4 border-t border-slate-800/60">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
-              {t('live_verifications')}
-            </span>
-          </div>
-
-          {/* Scrolling / Live Ticker Items */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-400 font-medium">
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              Personal Loan · <strong className="text-slate-200 font-semibold">HDFC Bank</strong> · <span className="text-emerald-400">Approved ₹15L</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-              Home Loan · <strong className="text-slate-200 font-semibold">SBI</strong> · <span className="text-amber-400">In Review (FOIR 42%)</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-              Vehicle Loan · <strong className="text-slate-200 font-semibold">ICICI</strong> · <span className="text-cyan-400">Verified in 2m</span>
-            </span>
-          </div>
-
           {/* Footer Security Badges */}
           <div className="flex items-center gap-5 mt-4 pt-3 border-t border-slate-800/40 text-[11px] text-slate-400">
             <span className="flex items-center gap-1.5">
@@ -281,7 +252,6 @@ export default function Login() {
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
                   {t('password_label')}
                 </label>
-                <span className="text-xs text-slate-400 font-medium">{t('default_pwd_hint')}</span>
               </div>
               
               <div className="relative rounded-xl border border-slate-300 focus-within:border-indigo-600 focus-within:ring-3 focus-within:ring-indigo-500/10 transition-all overflow-hidden shadow-2xs">

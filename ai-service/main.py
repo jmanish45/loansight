@@ -1,7 +1,9 @@
 """LoanLens AI Service — Document Intelligence API."""
 
+import hmac
 import logging
-from fastapi import FastAPI
+
+from fastapi import Depends, FastAPI, Header, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from routers.documents import router as documents_router
@@ -31,9 +33,49 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register routers
-app.include_router(documents_router)
-app.include_router(assistant_router)
+
+def require_service_token(
+    x_internal_token: str | None = Header(default=None),
+    authorization: str | None = Header(default=None),
+):
+    """Fail-closed service-to-service auth for every /api route.
+
+    The Node backend is the ONLY legitimate caller. It presents the shared
+    secret via `X-Internal-Token` (or `Authorization: Bearer <token>`).
+
+    - No token configured on the service  -> 503 (refuse to serve; never open).
+    - Missing or mismatched caller token   -> 401.
+    Comparison uses hmac.compare_digest to avoid timing side-channels.
+    """
+    from config import get_settings
+
+    expected = get_settings().ai_service_token
+    if not expected:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI service authentication is not configured (set AI_SERVICE_TOKEN).",
+        )
+
+    provided = x_internal_token
+    if not provided and authorization and authorization.lower().startswith("bearer "):
+        provided = authorization.split(" ", 1)[1].strip()
+
+    if not provided or not hmac.compare_digest(provided, expected):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing service token.",
+        )
+
+
+# Register routers — EVERY /api route requires the shared service token.
+app.include_router(documents_router, dependencies=[Depends(require_service_token)])
+app.include_router(assistant_router, dependencies=[Depends(require_service_token)])
+
+
+@app.get("/")
+async def root():
+    """Public, unauthenticated liveness probe (no sensitive data)."""
+    return {"service": "LoanLens AI Service", "status": "ok"}
 
 
 @app.on_event("startup")
@@ -64,6 +106,14 @@ async def startup_event():
         )
     else:
         logger.info(f"✅ Groq API key configured (model: {settings.groq_model})")
+
+    if not settings.ai_service_token:
+        logger.warning(
+            "🔒 AI_SERVICE_TOKEN not configured! All /api routes will return 503. "
+            "Set the SAME value in ai-service/.env and backend/.env to allow the backend to call this service."
+        )
+    else:
+        logger.info("🔒 Service token configured — /api routes require X-Internal-Token")
 
     logger.info("🚀 LoanLens AI Service started on http://localhost:8000")
     logger.info("📄 API docs: http://localhost:8000/docs")

@@ -110,7 +110,10 @@ const askLoanAssistant = async (applicationId, question, conversationHistory = [
 
     const response = await axios.post(`${AI_SERVICE_URL}/api/loan-assistant`, payload, {
       timeout: 45000,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Internal-Token': config.aiServiceToken,
+      },
     });
 
     return response.data;
@@ -130,6 +133,7 @@ const getBankPolicies = async () => {
   try {
     const response = await axios.get(`${AI_SERVICE_URL}/api/policies`, {
       timeout: 10000,
+      headers: { 'X-Internal-Token': config.aiServiceToken },
     });
     return response.data;
   } catch (error) {
@@ -146,7 +150,10 @@ const searchBankPolicies = async (query, category, topK = 5) => {
     const response = await axios.post(
       `${AI_SERVICE_URL}/api/policies/search`,
       { query, category, top_k: topK },
-      { timeout: 10000 }
+      {
+        timeout: 10000,
+        headers: { 'X-Internal-Token': config.aiServiceToken },
+      }
     );
     return response.data;
   } catch (error) {

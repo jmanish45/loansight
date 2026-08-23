@@ -199,7 +199,7 @@ const processDocumentInternal = async (documentId) => {
         `${AI_SERVICE_URL}/api/extract-text?document_type=${document.documentType}`,
         form,
         {
-          headers: { ...form.getHeaders() },
+          headers: { ...form.getHeaders(), 'X-Internal-Token': config.aiServiceToken },
           timeout: 60000,
           maxContentLength: 50 * 1024 * 1024,
         }
@@ -251,7 +251,7 @@ const processDocumentInternal = async (documentId) => {
         `${AI_SERVICE_URL}/api/process-document-mistral?document_type=${document.documentType}`,
         form,
         {
-          headers: { ...form.getHeaders() },
+          headers: { ...form.getHeaders(), 'X-Internal-Token': config.aiServiceToken },
           timeout: 120000,
           maxContentLength: 50 * 1024 * 1024,
         }
@@ -348,6 +348,7 @@ const processApplicationLLM = async (applicationId) => {
       payload,
       {
         timeout: 240000, // 4 minutes to allow for large context processing
+        headers: { 'X-Internal-Token': config.aiServiceToken },
       }
     );
 

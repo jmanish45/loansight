@@ -79,6 +79,10 @@ export default function ApplicationDetails() {
   const [reviewComment, setReviewComment] = useState('');
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
+  // Status-change reason modal (approve / reject require an officer reason)
+  const [statusReasonModal, setStatusReasonModal] = useState(null); // { status }
+  const [statusReason, setStatusReason] = useState('');
+
   // Document preview modal
   const [previewModal, setPreviewModal] = useState(null); // { docId, filename, url, mimetype, loading }
 
@@ -127,16 +131,18 @@ export default function ApplicationDetails() {
     }
   };
 
-  const handleStatusChange = async (newStatus) => {
+  const performStatusChange = async (newStatus, reason) => {
     const previousStatus = app?.status;
     try {
       setUpdating(true);
-      const response = await officerService.updateApplicationStatus(id, newStatus);
+      const response = await officerService.updateApplicationStatus(id, newStatus, reason);
       setApp(prev => ({ ...prev, ...response.data }));
       const label = STATUS_OPTIONS.find(o => o.value === newStatus)?.label || newStatus;
       toast.success(`Status set to ${label}.`);
       // Refresh activity if on that tab
       if (activeTab === 'notes') fetchActivity();
+      setStatusReasonModal(null);
+      setStatusReason('');
     } catch (error) {
       // Keep the select in sync with the server: the change never landed.
       setApp(prev => (prev ? { ...prev, status: previousStatus } : prev));
@@ -146,13 +152,30 @@ export default function ApplicationDetails() {
     }
   };
 
+  const handleStatusChange = (newStatus) => {
+    // Approving or rejecting is a material credit decision — the backend now
+    // requires a reason, so collect one before calling the API. Other status
+    // transitions proceed directly.
+    if (newStatus === 'approved' || newStatus === 'rejected') {
+      setStatusReason('');
+      setStatusReasonModal({ status: newStatus });
+      return;
+    }
+    performStatusChange(newStatus);
+  };
+
+  const submitStatusReason = () => {
+    if (!statusReasonModal || !statusReason.trim()) return;
+    performStatusChange(statusReasonModal.status, statusReason.trim());
+  };
+
   const handleDeleteApplication = async () => {
     const ok = await confirm({
-      title: 'Delete this application?',
+      title: 'Archive this application?',
       message:
-        'The application and every document uploaded against it will be permanently removed. This cannot be undone.',
+        'The application will be removed from the active queue. Its documents, notes and full activity history are preserved for audit, and it can be restored later.',
       detail: `${app?.applicant?.name || 'Unknown applicant'} · ${id}`,
-      confirmLabel: 'Delete permanently',
+      confirmLabel: 'Archive application',
       tone: 'danger',
     });
     if (!ok) return;
@@ -160,10 +183,10 @@ export default function ApplicationDetails() {
     try {
       setUpdating(true);
       await officerService.deleteApplication(id);
-      toast.success('Application deleted.');
+      toast.success('Application archived.');
       navigate(ROUTES.OFFICER_APPLICATIONS);
     } catch (error) {
-      toast.error(error.message, { title: 'Delete failed' });
+      toast.error(error.message, { title: 'Archive failed' });
       setUpdating(false);
     }
   };
@@ -423,6 +446,49 @@ export default function ApplicationDetails() {
                 className="bg-error-600 hover:bg-error-700"
               >
                 Reject Document
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Status Change Reason Modal (Approve / Reject) */}
+      {statusReasonModal && (
+        <div className="fixed inset-0 bg-charcoal-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <Card className="max-w-md w-full p-6 shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${statusReasonModal.status === 'approved' ? 'bg-emerald-100' : 'bg-error-100'}`}>
+                {statusReasonModal.status === 'approved'
+                  ? <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  : <XCircle className="w-5 h-5 text-error-600" />}
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-charcoal-900">
+                  {statusReasonModal.status === 'approved' ? 'Approve Loan Application' : 'Reject Loan Application'}
+                </h3>
+                <p className="text-xs text-charcoal-500">A reason is required and recorded in the audit trail.</p>
+              </div>
+            </div>
+            <textarea
+              value={statusReason}
+              onChange={(e) => setStatusReason(e.target.value)}
+              placeholder={statusReasonModal.status === 'approved'
+                ? 'Record the basis for approval (eligibility met, verification notes, conditions)...'
+                : 'Record the reason for rejection (policy failed, documents inconsistent)...'}
+              rows={4}
+              className="w-full border border-cream-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-accent-500 focus:border-accent-500 resize-none"
+            />
+            <div className="flex justify-end gap-3 mt-4">
+              <Button variant="ghost" size="sm" onClick={() => { setStatusReasonModal(null); setStatusReason(''); }}>Cancel</Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={submitStatusReason}
+                loading={updating}
+                disabled={!statusReason.trim()}
+                className={statusReasonModal.status === 'approved' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-error-600 hover:bg-error-700'}
+              >
+                {statusReasonModal.status === 'approved' ? 'Confirm Approval' : 'Confirm Rejection'}
               </Button>
             </div>
           </Card>
