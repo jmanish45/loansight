@@ -126,7 +126,7 @@ const resolveCheckSources = (check) => {
     }
 
     case 'DECLARED_VS_SLIP_INCOME': {
-      const dec = ev['declared_monthly_income'] || '₹50,000';
+      const dec = ev['declared_monthly_income'] || 'Not provided';
       const net = ev['salary_slip_net'] || '';
       const gross = ev['salary_slip_gross'] || '';
       const srcA = [`Declared Income (Slip): ${dec}`];
@@ -142,9 +142,9 @@ const resolveCheckSources = (check) => {
     }
 
     case 'SLIP_VS_BANK_SALARY': {
-      const avg = ev['bank_average_salary_credit'] || '₹21,650';
-      const net = ev['salary_slip_net'] || '₹21,650';
-      const credits = ev['credits_found'] || 1;
+      const avg = ev['bank_average_salary_credit'] || 'Not available';
+      const net = ev['salary_slip_net'] || 'Not provided';
+      const credits = ev['credits_found'] ?? '—';
       return {
         sourceA: {
           label: 'Expected (Salary Slip)',
@@ -170,16 +170,22 @@ const resolveCheckSources = (check) => {
       const panVal = ev['PAN Card'] || '-';
       const slipPan = ev['Salary Slip'] || ev['Form 16'] || '-';
       return {
-        sourceA: { label: 'PAN Card', values: [`PAN: ${panVal}`, `Format: ${panVal !== '-' ? 'Valid' : 'Pending'}`] },
-        sourceB: { label: 'Cross-Reference', values: [`Salary Slip: ${slipPan}`, `Status: ${slipPan !== '-' ? 'Matched' : 'Pending'}`] },
+        // Show only the observed PAN values being compared. The match verdict is
+        // the check's own computed status (rendered on the card) — we must NOT
+        // assert "Valid"/"Matched" from mere value presence.
+        sourceA: { label: 'PAN Card', values: [`PAN: ${panVal}`] },
+        sourceB: { label: 'Cross-Reference (Salary Slip / Form 16)', values: [`PAN: ${slipPan}`] },
       };
     }
 
     case 'AADHAAR_VERIFICATION': {
       const aadhVal = ev['aadhaar_number'] || ev['Aadhaar Card'] || '-';
       return {
-        sourceA: { label: 'Aadhaar Card', values: [`Aadhaar: ${aadhVal}`, `Format: ${aadhVal !== '-' ? 'Valid' : 'Pending'}`] },
-        sourceB: { label: 'Status', values: [`Status: ${aadhVal !== '-' ? 'Active' : 'Pending'}`, 'Linked: Yes'] },
+        // Only the number captured from the document is shown. No UIDAI/live
+        // Aadhaar verification is performed, so we must NOT claim "Active" or
+        // "Linked". The consistency verdict is the check's own status on the card.
+        sourceA: { label: 'Aadhaar Card', values: [`Aadhaar: ${aadhVal}`] },
+        sourceB: { label: 'Verification Basis', values: ['Number captured from document', 'No UIDAI/live verification performed'] },
       };
     }
 

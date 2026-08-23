@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     max_file_size_mb: int = 10
     allowed_extensions: list[str] = [".pdf", ".jpg", ".jpeg", ".png"]
 
+    # Shared secret required on every protected API call (X-Internal-Token or
+    # Authorization: Bearer). MUST match the Node backend's AI_SERVICE_TOKEN.
+    # Empty => the service refuses protected requests (fail-closed, 503).
+    ai_service_token: str = ""
+
     # Gemini rate-limiting / gateway settings
     gemini_rpm: int = 10            # requests per minute (free-tier safe)
     gemini_max_retries: int = 3     # max retries on 429/503

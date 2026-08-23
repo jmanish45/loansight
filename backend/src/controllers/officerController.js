@@ -31,8 +31,8 @@ const getApplication = async (req, res, next) => {
 
 const updateStatus = async (req, res, next) => {
   try {
-    const { status } = req.body;
-    const application = await officerService.updateApplicationStatus(req.params.id, status, req.user._id);
+    const { status, reason } = req.body;
+    const application = await officerService.updateApplicationStatus(req.params.id, status, req.user._id, reason);
     res.json({ success: true, data: application });
   } catch (error) {
     next(error);
@@ -163,8 +163,8 @@ const triggerReprocess = async (req, res, next) => {
 
 const deleteApplication = async (req, res, next) => {
   try {
-    await officerService.deleteApplication(req.params.id);
-    res.json({ success: true, message: 'Application deleted successfully' });
+    await officerService.deleteApplication(req.params.id, req.user._id);
+    res.json({ success: true, message: 'Application archived successfully' });
   } catch (error) {
     next(error);
   }

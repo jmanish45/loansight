@@ -33,6 +33,21 @@ function formatINR(amount) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
 }
 
+// Escape HTML entities BEFORE applying our controlled markdown-bold transform.
+// The AI answer is derived from applicant-supplied data (e.g. their name), so
+// injecting it raw into dangerouslySetInnerHTML is a stored-XSS sink. Escaping
+// first neutralises any markup; the only real tags are the <strong> we add
+// afterwards. The `**bold**` markers are plain asterisks and survive escaping.
+function renderInlineMarkdown(text) {
+  const escaped = String(text ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+  return escaped.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>');
+}
+
 const VERDICT_CONFIG = {
   ELIGIBLE: {
     label: 'Eligible for Sanction',
@@ -116,25 +131,16 @@ export default function LoanAssistantChat({ application, onNoteAdded }) {
           id: 'welcome',
           role: 'assistant',
           verdict: 'INFORMATIONAL',
-          confidence: 0.98,
-          confidenceLevel: 'HIGH',
           answer: `### 👋 Welcome to LoanSight AI Officer Assistant\n\nI am your **Hybrid RAG Credit Underwriting Copilot**. I analyze **${application.applicant?.name || 'this applicant'}'s** extracted financial data from MongoDB and cross-reference it with official **HDFC Bank lending policies** and risk guidelines.\n\nAsk any question regarding loan eligibility, FOIR calculations, policy rules, or flag root causes below.`,
           applicantDataSources: [
-            { label: 'Applicant Name', value: application.applicant?.name || 'Applicant', sourceDocument: 'Application Form', verified: true },
-            { label: 'Requested Amount', value: formatINR(application.requestedAmount), sourceDocument: 'Application Form', verified: true },
-            { label: 'Declared Income', value: `${formatINR(declaredIncome)}/mo`, sourceDocument: 'Application Form', verified: false },
-            { label: 'Loan Type', value: `${loanType.toUpperCase()} Loan`, sourceDocument: 'Application Form', verified: true },
+            { label: 'Applicant Name', value: application.applicant?.name || 'Applicant', sourceDocument: 'Application Form (declared)', verified: false },
+            { label: 'Requested Amount', value: formatINR(application.requestedAmount), sourceDocument: 'Application Form (declared)', verified: false },
+            { label: 'Declared Income', value: `${formatINR(declaredIncome)}/mo`, sourceDocument: 'Application Form (declared)', verified: false },
+            { label: 'Loan Type', value: `${loanType.toUpperCase()} Loan`, sourceDocument: 'Application Form (declared)', verified: false },
           ],
-          policySources: [
-            {
-              policyId: 'HDFC-PL-001',
-              policyName: `HDFC ${loanType.charAt(0).toUpperCase() + loanType.slice(1)} Loan Policy`,
-              section: 'Underwriting & Eligibility Knowledge Base',
-              ruleSummary: 'Active Bank Policy Rules Indexed in Vector Store',
-              citationUrl: 'https://www.hdfc.bank.in',
-              similarityScore: 0.99,
-            },
-          ],
+          // No policy citations are seeded on the greeting — real policy matches
+          // are populated from actual RAG retrieval when the officer asks a question.
+          policySources: [],
           suggestedFollowups: quickPrompts.slice(0, 3),
         },
       ]);
@@ -178,8 +184,10 @@ export default function LoanAssistantChat({ application, onNoteAdded }) {
         role: 'assistant',
         answer: aiData.answer || 'No analysis could be generated.',
         verdict: aiData.verdict || 'INFORMATIONAL',
-        confidence: aiData.confidence || 0.9,
-        confidenceLevel: aiData.confidenceLevel || 'HIGH',
+        // Display confidence ONLY if the AI service actually returned one — never
+        // fabricate a default. The badge is hidden when confidence is null.
+        confidence: aiData.confidence ?? null,
+        confidenceLevel: aiData.confidenceLevel || null,
         reasoning: aiData.reasoning || [],
         applicantDataSources: aiData.applicantDataSources || [],
         policySources: aiData.policySources || [],
@@ -196,8 +204,6 @@ export default function LoanAssistantChat({ application, onNoteAdded }) {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         verdict: 'FLAGGED_REVIEW',
-        confidence: 0.5,
-        confidenceLevel: 'LOW',
         answer: `⚠️ **Unable to complete AI analysis:** ${
           error.response?.data?.message || error.message || 'Server connection error'
         }. Please verify that the AI service is running.`,
@@ -471,14 +477,14 @@ export default function LoanAssistantChat({ application, onNoteAdded }) {
                       if (line.startsWith('- ')) {
                         return (
                           <li key={idx} className="text-slate-300 text-xs ml-4 list-disc">
-                            <span dangerouslySetInnerHTML={{ __html: line.replace('- ', '').replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>') }} />
+                            <span dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(line.replace('- ', '')) }} />
                           </li>
                         );
                       }
                       if (line.trim() === '') return <div key={idx} className="h-1" />;
                       return (
                         <p key={idx} className="text-xs text-slate-300 my-1" dangerouslySetInnerHTML={{
-                          __html: line.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+                          __html: renderInlineMarkdown(line)
                         }} />
                       );
                     })}

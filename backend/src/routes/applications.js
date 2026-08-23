@@ -20,7 +20,7 @@ router.get('/', getApplications);
 // Declared before '/:id' so the literal path is not read as an application id.
 router.get('/notifications', getNotifications);
 router.get('/:id', getApplication);
-router.post('/:id/documents', upload.single('file'), uploadApplicationDocument);
+router.post('/:id/documents', upload.single('file'), upload.validateUploadedFile, uploadApplicationDocument);
 router.post('/:id/submit', submitApplication);
 
 module.exports = router;

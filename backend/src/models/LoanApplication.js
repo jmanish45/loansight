@@ -58,6 +58,18 @@ const loanApplicationSchema = new mongoose.Schema(
         ref: 'Document',
       },
     ],
+    // Soft-delete / archival. Applications are NEVER hard-deleted (that would
+    // destroy the audit trail); they are flagged archived and hidden from the
+    // active queues instead. Documents, notes, activity and validation history
+    // are all preserved.
+    archived: {
+      type: Boolean,
+      default: false,
+    },
+    archivedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

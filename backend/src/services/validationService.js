@@ -113,6 +113,7 @@ const runValidation = async (applicationId) => {
     try {
       const response = await axios.post(`${AI_SERVICE_URL}/api/verify-application`, payload, {
         timeout: 60000,
+        headers: { 'X-Internal-Token': config.aiServiceToken },
       });
       validationData = response.data;
     } catch (aiErr) {

@@ -2,9 +2,7 @@ const LoanApplication = require('../models/LoanApplication');
 const Document = require('../models/Document');
 const Note = require('../models/Note');
 const Activity = require('../models/Activity');
-const ValidationResult = require('../models/ValidationResult');
 const ApiError = require('../utils/ApiError');
-const fs = require('fs');
 const { logActivity } = require('../utils/activityLogger');
 
 const getAllApplications = async (filters = {}) => {
@@ -15,6 +13,8 @@ const getAllApplications = async (filters = {}) => {
     query.status = { $nin: ['draft', 'documents_pending'] };
   }
   if (filters.loanType) query.loanType = filters.loanType;
+  // Archived (soft-deleted) applications never appear in the active queues.
+  query.archived = { $ne: true };
 
   return await LoanApplication.find(query)
     .populate('applicant', 'name email')
@@ -37,9 +37,22 @@ const getApplicationById = async (id) => {
   return application;
 };
 
-const updateApplicationStatus = async (id, status, officerId) => {
+const updateApplicationStatus = async (id, status, officerId, reason) => {
   if (!id.match(/^[0-9a-fA-F]{24}$/)) {
     throw ApiError.badRequest('Invalid application ID format');
+  }
+
+  // Only known workflow states are accepted — never an arbitrary string.
+  const validStatuses = LoanApplication.schema.path('status').enumValues;
+  if (!validStatuses.includes(status)) {
+    throw ApiError.badRequest(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
+  }
+
+  // Material credit decisions must carry an officer-supplied reason for the
+  // audit trail (accountability). No silent one-click approve/reject.
+  const reasonText = typeof reason === 'string' ? reason.trim() : '';
+  if ((status === 'approved' || status === 'rejected') && !reasonText) {
+    throw ApiError.badRequest(`A reason is required to mark an application as "${status}".`);
   }
 
   const application = await LoanApplication.findById(id);
@@ -51,10 +64,11 @@ const updateApplicationStatus = async (id, status, officerId) => {
   application.status = status;
   await application.save();
 
-  // Log the status change activity
+  // Log the status change activity (with the officer's reason where provided)
   await logActivity(id, officerId, 'Status Changed', {
     from: previousStatus,
     to: status,
+    reason: reasonText || null,
   });
 
   // Approving the application clears every supporting document. Once the officer
@@ -159,7 +173,7 @@ const getActivity = async (applicationId) => {
     .sort({ createdAt: -1 });
 };
 
-const deleteApplication = async (applicationId) => {
+const deleteApplication = async (applicationId, officerId) => {
   if (!applicationId.match(/^[0-9a-fA-F]{24}$/)) {
     throw ApiError.badRequest('Invalid application ID format');
   }
@@ -169,41 +183,36 @@ const deleteApplication = async (applicationId) => {
     throw ApiError.notFound('Application not found');
   }
 
-  // Find all documents to delete physical files
-  const documents = await Document.find({ application: applicationId });
-  documents.forEach(doc => {
-    try {
-      if (doc.path && fs.existsSync(doc.path)) {
-        fs.unlinkSync(doc.path);
-      }
-    } catch (err) {
-      console.error(`Failed to delete file ${doc.path}:`, err);
-    }
-  });
+  // SOFT archive only. We never destroy the application, its documents, notes,
+  // activity log or validation history — doing so would erase the audit trail
+  // that a real lending decision must retain. The record is flagged archived
+  // and filtered out of the active queues (see getAllApplications / stats).
+  if (!application.archived) {
+    application.archived = true;
+    application.archivedAt = new Date();
+    await application.save();
 
-  // Delete all related records
-  await Document.deleteMany({ application: applicationId });
-  await Note.deleteMany({ application: applicationId });
-  await Activity.deleteMany({ application: applicationId });
-  await ValidationResult.deleteMany({ application: applicationId });
+    await logActivity(applicationId, officerId, 'Application Archived', {
+      previousStatus: application.status,
+    });
+  }
 
-  // Delete the application itself
-  await LoanApplication.findByIdAndDelete(applicationId);
-  
-  return true;
+  return application;
 };
 
 const getDashboardStats = async () => {
+  // Every dashboard metric excludes archived (soft-deleted) applications.
+  const notArchived = { archived: { $ne: true } };
   const [total, submitted, underReview, completed, pendingDocs, docsRequired] = await Promise.all([
-    LoanApplication.countDocuments({ status: { $nin: ['draft', 'documents_pending'] } }),
-    LoanApplication.countDocuments({ status: 'submitted' }),
-    LoanApplication.countDocuments({ status: 'under_review' }),
-    LoanApplication.countDocuments({ status: { $in: ['approved', 'rejected'] } }),
-    LoanApplication.countDocuments({ status: 'documents_pending' }),
-    LoanApplication.countDocuments({ status: 'documents_required' }),
+    LoanApplication.countDocuments({ ...notArchived, status: { $nin: ['draft', 'documents_pending'] } }),
+    LoanApplication.countDocuments({ ...notArchived, status: 'submitted' }),
+    LoanApplication.countDocuments({ ...notArchived, status: 'under_review' }),
+    LoanApplication.countDocuments({ ...notArchived, status: { $in: ['approved', 'rejected'] } }),
+    LoanApplication.countDocuments({ ...notArchived, status: 'documents_pending' }),
+    LoanApplication.countDocuments({ ...notArchived, status: 'documents_required' }),
   ]);
 
-  const recent = await LoanApplication.find({ status: { $nin: ['draft', 'documents_pending'] } })
+  const recent = await LoanApplication.find({ ...notArchived, status: { $nin: ['draft', 'documents_pending'] } })
     .populate('applicant', 'name')
     .sort({ createdAt: -1 })
     .limit(5);
