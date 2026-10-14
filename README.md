@@ -353,6 +353,6 @@ Distributed under the MIT License. See [`LICENSE`](LICENSE) for more information
 
 <br/>
 
-Built by [**Aditya Nikam**](https://github.com/adityaa-nikam)
+Built by [**Manish Jaiswal**](https://github.com/jmanish45)
 
 </div>
