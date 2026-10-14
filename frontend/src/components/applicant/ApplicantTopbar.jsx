@@ -1,6 +1,7 @@
 import { Menu, Search } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import LanguageSelector from '../common/LanguageSelector';
+import { useLanguage } from '../../context/LanguageContext';
 
 function initialsOf(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
@@ -16,6 +17,7 @@ export default function ApplicantTopbar({
   showSearch = true,
   onMenuClick = () => {},
 }) {
+  const { t } = useLanguage();
   const firstName = String(userName || '').trim().split(/\s+/)[0] || 'there';
 
   return (
@@ -32,27 +34,30 @@ export default function ApplicantTopbar({
 
         <div className="hidden sm:block min-w-0">
           <p className="text-[15px] font-semibold text-slate-900 leading-tight truncate">
-            Welcome back, {firstName}
+            {t('welcome_back', 'Welcome back')}, {firstName}
           </p>
           <p className="text-xs text-slate-400 truncate">
-            {subtitle || "Here's your loan activity at a glance."}
+            {subtitle || t('loan_activity_glance', "Here's your loan activity at a glance.")}
           </p>
         </div>
 
         {showSearch && (
-          <div className="relative flex-1 max-w-md ml-auto">
+          <div className="relative flex-1 max-w-md ml-auto group">
             <Search
-              className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+              className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-focus-within:text-emerald-600 transition-colors"
               aria-hidden="true"
             />
             <input
               type="search"
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search applications, banks, document types..."
+              placeholder={t('search_applicant_placeholder', 'Search applications, policies... (Press Ctrl+K)')}
               aria-label="Search your applications"
-              className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white transition-colors"
+              className="w-full pl-9 pr-14 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:bg-white transition-colors"
             />
+            <kbd className="hidden sm:inline-flex items-center gap-0.5 absolute right-2.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-slate-400 bg-white border border-slate-200 rounded shadow-2xs pointer-events-none">
+              <span className="text-[11px]">⌘</span>K
+            </kbd>
           </div>
         )}
 

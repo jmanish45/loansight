@@ -1,36 +1,36 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
-  Aperture,
   Eye,
   EyeOff,
   ArrowRight,
   ShieldCheck,
-  Building,
-  Brain,
-  FileCheck2,
-  PieChart,
-  Shield,
-  Smartphone,
-  UserCheck,
   Lock,
+  FileCheck,
+  Building2,
+  UserCheck,
+  Sparkles,
   Zap,
+  CheckCircle2,
+  Briefcase,
+  Shield,
+  BadgeCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import LanguageSelector from '../components/common/LanguageSelector';
+import BrandLogo from '../components/common/BrandLogo';
+import Button from '../components/common/Button';
+import Input from '../components/common/Input';
+import Badge from '../components/common/Badge';
+import Alert from '../components/common/Alert';
 import { useForm } from '../hooks/useForm';
 import { validators } from '../utils/validation';
 import { ROUTES } from '../constants/routes';
 
 const validationRules = {
-  email: [
-    (v) => validators.required(v, 'Email address'),
-    validators.email,
-  ],
-  password: [
-    (v) => validators.required(v, 'Password'),
-  ],
+  email: [(v) => validators.required(v, 'Email address'), validators.email],
+  password: [(v) => validators.required(v, 'Password')],
 };
 
 export default function Login() {
@@ -40,7 +40,7 @@ export default function Login() {
   const location = useLocation();
 
   const [showPassword, setShowPassword] = useState(false);
-  const [activePortal, setActivePortal] = useState('applicant'); // 'applicant' | 'officer'
+  const [activePortal, setActivePortal] = useState('applicant');
 
   const {
     values,
@@ -54,12 +54,20 @@ export default function Login() {
     handleSubmit,
   } = useForm({
     initialValues: {
-      email: 'rohit.sharma@example.com',
-      password: 'Password123!',
+      email: '',
+      password: '',
     },
     validationRules,
     onSubmit: async (data) => {
-      const authUser = await login(data.email, data.password);
+      const cleanEmail = (data.email || '').trim();
+      const cleanPassword = (data.password || '').trim();
+      const authUser = await login(cleanEmail, cleanPassword);
+      if (activePortal === 'applicant' && authUser.role === 'officer') {
+        throw new Error('Invalid credentials. Bank officers must sign in via the Officer Workspace.');
+      }
+      if (activePortal === 'officer' && authUser.role === 'applicant') {
+        throw new Error('Invalid credentials. Applicants must sign in via the Applicant Portal.');
+      }
       const destination = authUser.role === 'officer' ? '/officer' : ROUTES.APPLICANT;
       navigate(location.state?.from?.pathname || destination, { replace: true });
     },
@@ -67,339 +75,278 @@ export default function Login() {
 
   const handleSwitchToOfficer = () => {
     setActivePortal('officer');
-    setValues({
-      email: 'officer@loanlens.ai',
-      password: 'Password123!',
-    });
+    setValues({ email: '', password: '' });
   };
 
   const handleSwitchToApplicant = () => {
     setActivePortal('applicant');
-    setValues({
-      email: 'rohit.sharma@example.com',
-      password: 'Password123!',
-    });
+    setValues({ email: '', password: '' });
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row font-sans bg-white">
-      
-      {/* ─────────────────────────────────────────────────────────────
-          LEFT SIDE: Dark Navy Hero & Feature Showcase (Exact Structure)
-          ───────────────────────────────────────────────────────────── */}
-      <div className="w-full lg:w-[54%] bg-gradient-to-br from-navy-950 via-[#0A192F] to-[#0D2137] text-white p-8 lg:p-14 flex flex-col justify-between relative overflow-hidden border-r border-slate-800">
-        
-        {/* Subtle Ambient Radial Glow */}
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen w-full flex flex-col lg:flex-row font-sans bg-slate-50 selection:bg-emerald-500 selection:text-white">
+      {/* Left Info Panel */}
+      <div className="w-full lg:w-[48%] xl:w-[45%] bg-slate-950 text-white p-8 lg:p-12 flex flex-col justify-between border-r border-slate-800/80 relative overflow-hidden">
+        {/* Ambient Radial Glow & Grid pattern */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_20%_-10%,rgba(16,185,129,0.18),rgba(255,255,255,0))]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_80%_90%,rgba(56,189,248,0.1),rgba(255,255,255,0))]" />
+        <div
+          className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          style={{
+            backgroundImage: `radial-gradient(rgba(255,255,255,0.8) 1px, transparent 1px)`,
+            backgroundSize: '24px 24px',
+          }}
+        />
 
-        {/* Top Header / Brand Logo */}
-        <div className="relative z-10">
-          <Link to={ROUTES.HOME} className="inline-flex items-center gap-3.5 group">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 p-0.5 shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
-              <div className="w-full h-full bg-navy-950 rounded-[10px] flex items-center justify-center">
-                <Aperture className="w-6 h-6 text-cyan-400" />
+        <div className="space-y-8 relative z-10">
+          <div className="flex items-center justify-between">
+            <BrandLogo variant="light" size="md" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Engine v2.4 Online
+            </span>
+          </div>
+
+          <div className="space-y-3.5 pt-2">
+            <Badge variant="navy" dot>
+              {t('secure_underwriting_portal', 'SECURE UNDERWRITING PORTAL')}
+            </Badge>
+            <h1 className="text-2xl sm:text-3xl xl:text-4xl font-bold tracking-tight text-white leading-tight">
+              {t('headline', 'Grounded Credit Intelligence & Verification')}
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-md">
+              {t('sub_headline', 'Sign in to manage loan applications, evaluate automated cross-document diffs, and access real-time policy RAG verification.')}
+            </p>
+          </div>
+
+          {/* Feature Highlights Grid */}
+          <div className="space-y-3 pt-2">
+            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 backdrop-blur-md flex items-start gap-3.5 hover:border-slate-700/80 transition-colors group">
+              <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <FileCheck className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div>
+                <h4 className="text-xs font-semibold text-white group-hover:text-emerald-400 transition-colors flex items-center gap-1.5">
+                  {t('feature_kyc_title', 'Cross-Document Verification')}
+                  <Sparkles className="w-3 h-3 text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </h4>
+                <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                  {t('feature_kyc_desc', 'Automated OCR diff engine flags salary slip vs bank credit discrepancies instant.')}
+                </p>
               </div>
             </div>
-            <div>
-              <span className="text-2xl font-black tracking-tight text-white flex items-center gap-1.5 leading-none">
-                {t('brand_name')} <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">AI</span>
-              </span>
-              <span className="text-[11px] font-bold tracking-widest text-slate-400 uppercase mt-1 block">
-                {t('for_people')}
-              </span>
-            </div>
-          </Link>
 
-          {/* Sub-tag */}
-          <div className="mt-10">
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-cyan-400 mb-3">
-              {t('platform_badge')}
-            </p>
-
-            {/* Prominent Large Headline in Glass Box */}
-            <div className="inline-block p-4 sm:p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-2xl">
-              <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-black uppercase tracking-tight text-white leading-tight">
-                {t('headline')}
-              </h1>
+            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 backdrop-blur-md flex items-start gap-3.5 hover:border-slate-700/80 transition-colors group">
+              <div className="w-9 h-9 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <ShieldCheck className="w-4 h-4 text-sky-400" />
+              </div>
+              <div>
+                <h4 className="text-xs font-semibold text-white group-hover:text-sky-400 transition-colors flex items-center gap-1.5">
+                  {t('feature_rag_title', 'Vector RAG Policy Grounding')}
+                </h4>
+                <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                  {t('feature_rag_desc', 'AI copilot strictly grounded in 14 indexed bank credit clauses with zero hallucination.')}
+                </p>
+              </div>
             </div>
 
-            {/* Paragraph Description */}
-            <p className="text-slate-300 text-sm sm:text-[15px] leading-relaxed mt-6 max-w-lg">
-              {t('sub_headline')}
-            </p>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-cyan-400/90 mt-3">
-              {t('verify_evaluate_approve')}
-            </p>
-          </div>
-        </div>
-
-        {/* Middle: 3 Feature Cards in Vertical Stack */}
-        <div className="relative z-10 my-8 space-y-3.5">
-          {/* Card 1 */}
-          <div className="p-4 rounded-xl bg-slate-900/50 hover:bg-slate-900/70 border border-slate-800/80 backdrop-blur-sm transition-all duration-200 flex items-start gap-4 shadow-sm">
-            <div className="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
-              <Brain className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-white leading-tight">{t('feature_rag_title')}</h4>
-              <p className="text-xs text-slate-400 mt-1 leading-snug">
-                {t('feature_rag_desc')}
-              </p>
-            </div>
-          </div>
-
-          {/* Card 2 */}
-          <div className="p-4 rounded-xl bg-slate-900/50 hover:bg-slate-900/70 border border-slate-800/80 backdrop-blur-sm transition-all duration-200 flex items-start gap-4 shadow-sm">
-            <div className="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 mt-0.5">
-              <FileCheck2 className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-white leading-tight">{t('feature_kyc_title')}</h4>
-              <p className="text-xs text-slate-400 mt-1 leading-snug">
-                {t('feature_kyc_desc')}
-              </p>
-            </div>
-          </div>
-
-          {/* Card 3 */}
-          <div className="p-4 rounded-xl bg-slate-900/50 hover:bg-slate-900/70 border border-slate-800/80 backdrop-blur-sm transition-all duration-200 flex items-start gap-4 shadow-sm">
-            <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-              <PieChart className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-white leading-tight">{t('feature_foir_title')}</h4>
-              <p className="text-xs text-slate-400 mt-1 leading-snug">
-                {t('feature_foir_desc')}
-              </p>
+            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/90 backdrop-blur-md flex items-start gap-3.5 hover:border-slate-700/80 transition-colors group">
+              <div className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <Zap className="w-4 h-4 text-indigo-400" />
+              </div>
+              <div>
+                <h4 className="text-xs font-semibold text-white group-hover:text-indigo-400 transition-colors">
+                  {t('feature_foir_title', 'Real-Time FOIR Risk Limit Engine')}
+                </h4>
+                <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                  {t('feature_foir_desc', 'Dynamic stress testing on net disposable income and obligations before approval.')}
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom Section: Live Activity Ticker & Micro-Trust Badges */}
-        <div className="relative z-10 pt-4 border-t border-slate-800/60">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
-              {t('live_verifications')}
-            </span>
-          </div>
-
-          {/* Scrolling / Live Ticker Items */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-400 font-medium">
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              Personal Loan · <strong className="text-slate-200 font-semibold">HDFC Bank</strong> · <span className="text-emerald-400">Approved ₹15L</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-              Home Loan · <strong className="text-slate-200 font-semibold">SBI</strong> · <span className="text-amber-400">In Review (FOIR 42%)</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-              Vehicle Loan · <strong className="text-slate-200 font-semibold">ICICI</strong> · <span className="text-cyan-400">Verified in 2m</span>
-            </span>
-          </div>
-
-          {/* Footer Security Badges */}
-          <div className="flex items-center gap-5 mt-4 pt-3 border-t border-slate-800/40 text-[11px] text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> {t('secure_ssl')}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5 text-cyan-400" /> {t('zero_data_selling')}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-amber-400" /> {t('instant_rag')}
-            </span>
-          </div>
+        {/* Footer info */}
+        <div className="pt-8 mt-8 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-400 font-mono relative z-10">
+          <span className="flex items-center gap-1.5">
+            <Lock className="w-3.5 h-3.5 text-emerald-400" /> {t('secure_ssl', 'AES-256 Encrypted')}
+          </span>
+          <span className="flex items-center gap-1 text-slate-500">
+            <Shield className="w-3 h-3 text-slate-400" /> SOC2 Type II
+          </span>
+          <span>LoanSight AI © {new Date().getFullYear()}</span>
         </div>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────
-          RIGHT SIDE: Crisp White Sign-In Form with Language Selector
-          ───────────────────────────────────────────────────────────── */}
-      <div className="w-full lg:w-[46%] bg-white p-8 lg:p-14 flex flex-col justify-between">
-        
-        {/* Top Header / Language Picker Dropdown */}
-        <div className="flex justify-end items-center">
+      {/* Right Form Panel */}
+      <div className="w-full lg:w-[52%] xl:w-[55%] bg-white p-8 lg:p-12 flex flex-col justify-between">
+        <div className="flex items-center justify-between pb-4">
+          <div className="flex items-center gap-2">
+            <span
+              className={`px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide uppercase ${
+                activePortal === 'officer'
+                  ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                  : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+              }`}
+            >
+              {activePortal === 'officer' ? t('officer_workspace', 'Bank Officer Workspace') : t('applicant_portal', 'Applicant Portal')}
+            </span>
+          </div>
           <LanguageSelector variant="light" />
         </div>
 
-        {/* Main Sign In Box */}
-        <div className="max-w-md w-full mx-auto my-auto py-6">
-          
-          {/* Top Blue Device / Key Icon */}
-          <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mb-6 shadow-2xs">
-            <Smartphone className="w-6 h-6" />
+        <div className="max-w-md w-full mx-auto py-6 space-y-6">
+          {/* Header */}
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+              {activePortal === 'officer' ? (
+                <>
+                  <Building2 className="w-6 h-6 text-indigo-600" />
+                  {t('signin_title_officer', 'Officer Underwriting Sign In')}
+                </>
+              ) : (
+                <>
+                  <UserCheck className="w-6 h-6 text-emerald-600" />
+                  {t('signin_title_applicant', 'Applicant Sign In')}
+                </>
+              )}
+            </h2>
+            <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+              {activePortal === 'officer'
+                ? t('signin_subtitle_officer', 'Enter your bank credentials to access the credit committee workstation.')
+                : t('signin_subtitle_applicant', 'Enter your credentials to manage loan applications and document verification.')}
+            </p>
           </div>
 
-          {/* Heading */}
-          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-            {t('signin_title')}
-          </h2>
-          <p className="text-sm text-slate-500 mt-1 mb-8">
-            {activePortal === 'officer'
-              ? t('signin_subtitle_officer')
-              : t('signin_subtitle_applicant')}
-          </p>
+
 
           {/* Form */}
-          <form onSubmit={handleSubmit} noValidate className="space-y-5">
-            
-            {/* Email / Username Input */}
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">
-                {t('email_label')}
-              </label>
-              
-              <div className="flex rounded-xl border border-slate-300 focus-within:border-indigo-600 focus-within:ring-3 focus-within:ring-indigo-500/10 transition-all overflow-hidden shadow-2xs">
-                <div className="bg-slate-50 px-3.5 py-3 border-r border-slate-200 flex items-center gap-1 text-xs font-bold text-slate-600 shrink-0">
-                  <span>IN</span>
-                  <span className="text-slate-400 font-normal">@</span>
-                </div>
-                <input
-                  name="email"
-                  type="email"
-                  value={values.email}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  className="w-full px-3.5 py-3 text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none bg-white"
-                />
-              </div>
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            <Input
+              label={t('email_label', 'Email Address / Username')}
+              name="email"
+              type="email"
+              value={values.email}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              placeholder="you@example.com"
+              error={touched.email ? errors.email : null}
+              required
+            />
 
-              {touched.email && errors.email && (
-                <p className="text-xs text-red-500 mt-1.5 font-medium">{errors.email}</p>
-              )}
-            </div>
-
-            {/* Password Input */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
-                  {t('password_label')}
-                </label>
-                <span className="text-xs text-slate-400 font-medium">{t('default_pwd_hint')}</span>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[11px] text-slate-400 font-mono">{t('default_pwd_hint', 'Default: Password123!')}</span>
               </div>
-              
-              <div className="relative rounded-xl border border-slate-300 focus-within:border-indigo-600 focus-within:ring-3 focus-within:ring-indigo-500/10 transition-all overflow-hidden shadow-2xs">
-                <input
+              <div className="relative">
+                <Input
+                  label={t('password_label', 'Password')}
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   value={values.password}
                   onChange={handleChange}
                   onBlur={handleBlur}
                   placeholder="••••••••••••"
-                  autoComplete="current-password"
-                  className="w-full px-3.5 py-3 pr-10 text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none bg-white"
+                  error={touched.password ? errors.password : null}
+                  required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-3 top-[34px] text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-
-              {touched.password && errors.password && (
-                <p className="text-xs text-red-500 mt-1.5 font-medium">{errors.password}</p>
-              )}
             </div>
 
-            {/* Submit Error */}
-            {submitError && (
-              <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs font-medium animate-fade-in flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                {submitError}
-              </div>
-            )}
+            {submitError && <Alert variant="error">{submitError}</Alert>}
 
-            {/* Continue Button */}
-            <button
+            <Button
               type="submit"
-              disabled={isSubmitting}
-              className={`
-                w-full py-3.5 px-6 rounded-xl text-sm font-bold text-white
-                bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700
-                shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30 transition-all duration-200
-                flex items-center justify-center gap-2 cursor-pointer
-                ${isSubmitting ? 'opacity-80 cursor-not-allowed' : 'active:scale-[0.99]'}
-              `}
+              variant="navy"
+              size="lg"
+              loading={isSubmitting}
+              className="w-full shadow-md hover:shadow-lg transition-all"
             >
-              {isSubmitting ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  {t('continue_btn')}...
-                </>
-              ) : (
-                <>
-                  {t('continue_btn')} <ArrowRight className="w-4 h-4 ml-1" />
-                </>
-              )}
-            </button>
+              <span>{t('sign_in', 'Sign In')}</span>
+              <ArrowRight className="w-4 h-4" />
+            </Button>
           </form>
 
-          {/* Terms Agreement Note */}
-          <p className="text-center text-xs text-slate-400 mt-5">
-            {t('terms_prefix')}{' '}
-            <a href="#terms" className="text-indigo-600 hover:underline font-semibold">{t('terms_link')}</a>
-            {' '}{t('and_text')}{' '}
-            <a href="#privacy" className="text-indigo-600 hover:underline font-semibold">{t('privacy_link')}</a>
-          </p>
-
-          {/* Role Portal Switcher Button */}
-          <div className="mt-8 pt-6 border-t border-slate-100">
+          {/* Switch Portal Action Card */}
+          <div className="pt-4 border-t border-slate-200/80 space-y-4">
             {activePortal === 'applicant' ? (
-              <div className="text-center">
-                <p className="text-xs text-slate-500 mb-3 font-medium">
-                  {t('are_you_officer')}
-                </p>
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-slate-500">{t('are_you_officer', 'Are you a Bank Underwriting Officer?')}</p>
                 <button
                   type="button"
                   onClick={handleSwitchToOfficer}
-                  className="w-full py-3 px-4 rounded-xl border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 shadow-2xs group cursor-pointer"
+                  className="w-full text-left p-3.5 rounded-xl border border-indigo-200/80 bg-gradient-to-r from-indigo-50/60 to-slate-50 hover:from-indigo-100/70 hover:to-indigo-50/50 hover:border-indigo-300 transition-all duration-200 flex items-center justify-between group cursor-pointer shadow-xs"
                 >
-                  <Shield className="w-4 h-4 text-indigo-600 group-hover:scale-110 transition-transform" />
-                  {t('access_officer_portal')}
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                      <Building2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-indigo-950 group-hover:text-indigo-700 transition-colors flex items-center gap-1.5">
+                        {t('access_officer_workspace', 'Access Bank Officer Workspace')}
+                        <BadgeCheck className="w-3.5 h-3.5 text-indigo-600" />
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {t('underwriter_desc', 'Underwriter decisioning desk & AI RAG assistant')}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="w-7 h-7 rounded-full bg-white border border-indigo-200 flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-all ml-2">
+                    <ArrowRight className="w-3.5 h-3.5 text-indigo-600 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                  </div>
                 </button>
               </div>
             ) : (
-              <div className="text-center">
-                <p className="text-xs text-slate-500 mb-3 font-medium">
-                  {t('are_you_applicant')}
-                </p>
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-slate-500">{t('are_you_applicant', 'Looking for the Loan Applicant portal?')}</p>
                 <button
                   type="button"
                   onClick={handleSwitchToApplicant}
-                  className="w-full py-3 px-4 rounded-xl border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold transition-all duration-200 flex items-center justify-center gap-2 shadow-2xs group cursor-pointer"
+                  className="w-full text-left p-3.5 rounded-xl border border-emerald-200/80 bg-gradient-to-r from-emerald-50/60 to-slate-50 hover:from-emerald-100/70 hover:to-emerald-50/50 hover:border-emerald-300 transition-all duration-200 flex items-center justify-between group cursor-pointer shadow-xs"
                 >
-                  <UserCheck className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
-                  {t('access_applicant_portal')}
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                      <Briefcase className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-emerald-950 group-hover:text-emerald-700 transition-colors flex items-center gap-1.5">
+                        {t('access_applicant_portal', 'Access Loan Applicant Portal')}
+                        <BadgeCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {t('track_status_desc', 'Track application status & document analysis')}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="w-7 h-7 rounded-full bg-white border border-emerald-200 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-all ml-2">
+                    <ArrowRight className="w-3.5 h-3.5 text-emerald-600 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                  </div>
                 </button>
               </div>
             )}
-          </div>
 
-          {/* Quick Registration Link */}
-          <div className="mt-6 text-center">
-            <p className="text-xs text-slate-500">
-              {t('dont_have_account')}{' '}
-              <Link
-                to={ROUTES.REGISTER}
-                className="font-bold text-indigo-600 hover:text-indigo-700 hover:underline transition-colors ml-1"
-              >
-                {t('apply_new_customer')}
-              </Link>
-            </p>
+            <div className="text-center pt-2">
+              <p className="text-xs text-slate-500">
+                {t('dont_have_account', "Don't have an account?")}{' '}
+                <Link to={ROUTES.REGISTER} className="font-semibold text-emerald-700 hover:text-emerald-800 hover:underline">
+                  {t('apply_new_customer', 'Create a LoanSight Account')}
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Bottom Copyright */}
-        <div className="text-center text-[11px] text-slate-400 py-2">
-          {t('brand_name')} {t('all_rights_reserved')} © {new Date().getFullYear()}
+        <div className="text-center text-[11px] text-slate-400 flex items-center justify-center gap-2 border-t border-slate-100 pt-4">
+          <Shield className="w-3.5 h-3.5 text-emerald-600" />
+          {t('protected_by_tls', 'Protected by Bank-Grade TLS 1.3 Encryption & Hardware Security Module')}
         </div>
       </div>
     </div>

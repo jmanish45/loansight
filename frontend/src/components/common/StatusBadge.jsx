@@ -1,20 +1,18 @@
+import { useLanguage } from '../../context/LanguageContext';
+import { translateStatus } from '../../constants/translations';
 import { statusMeta } from '../../lib/officerData';
 
-/**
- * Status badge for loan application statuses. Labels and colours come from the
- * shared officer status map so the badge, the queue chips and the dashboard
- * donut can never disagree.
- * Keys stay in sync with APPLICATION_STATUSES in
- * backend/src/models/LoanApplication.js
- */
 export default function StatusBadge({ status, className = '' }) {
+  const { t } = useLanguage();
   const meta = statusMeta(status);
+  const label = translateStatus(status, t) || meta.label;
 
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-1 text-[11px] font-semibold rounded-full whitespace-nowrap ${meta.chip} ${className}`}
+      className={`inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-md tracking-tight whitespace-nowrap border border-slate-200 ${meta.chip} ${className}`}
     >
-      {meta.label}
+      {label}
     </span>
   );
 }
+

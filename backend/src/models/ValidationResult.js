@@ -40,11 +40,11 @@ const checkSchema = new mongoose.Schema(
       default: {},
     },
     sourceA: {
-      type: evidenceSideSchema,
+      type: mongoose.Schema.Types.Mixed,
       default: null,
     },
     sourceB: {
-      type: evidenceSideSchema,
+      type: mongoose.Schema.Types.Mixed,
       default: null,
     },
   },
@@ -76,11 +76,11 @@ const findingSchema = new mongoose.Schema(
       },
     ],
     sourceA: {
-      type: evidenceSideSchema,
+      type: mongoose.Schema.Types.Mixed,
       default: null,
     },
     sourceB: {
-      type: evidenceSideSchema,
+      type: mongoose.Schema.Types.Mixed,
       default: null,
     },
   },

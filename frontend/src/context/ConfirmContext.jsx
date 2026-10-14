@@ -5,9 +5,9 @@ import Button from '../components/common/Button';
 const ConfirmContext = createContext(null);
 
 const TONES = {
-  danger: { Icon: Trash2, iconClass: 'text-error-600', iconBg: 'bg-error-100' },
-  warning: { Icon: AlertTriangle, iconClass: 'text-warning-600', iconBg: 'bg-warning-100' },
-  neutral: { Icon: HelpCircle, iconClass: 'text-accent-600', iconBg: 'bg-accent-100' },
+  danger: { Icon: Trash2, iconClass: 'text-red-600', iconBg: 'bg-red-50 border border-red-200' },
+  warning: { Icon: AlertTriangle, iconClass: 'text-amber-600', iconBg: 'bg-amber-50 border border-amber-200' },
+  neutral: { Icon: HelpCircle, iconClass: 'text-emerald-600', iconBg: 'bg-emerald-50 border border-emerald-200' },
 };
 
 /**
@@ -95,7 +95,7 @@ export function ConfirmProvider({ children }) {
 
       {request && (
         <div
-          className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-charcoal-900/45 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in"
           onClick={() => settle(false)}
         >
           <div
@@ -104,23 +104,27 @@ export function ConfirmProvider({ children }) {
             aria-labelledby="confirm-title"
             aria-describedby={request.message ? 'confirm-message' : undefined}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md bg-cream-50 rounded-2xl shadow-float border border-cream-300/70 p-6 animate-scale-in"
+            className="w-full max-w-md bg-white rounded-md shadow-2xl border border-slate-300 p-6 animate-scale-in z-[130] opacity-100"
+            style={{ backgroundColor: '#ffffff', opacity: 1 }}
           >
             <div className="flex items-start gap-4">
-              <span className={`shrink-0 w-11 h-11 rounded-xl flex items-center justify-center ${tone.iconBg}`}>
+              <span className={`shrink-0 w-11 h-11 rounded-md flex items-center justify-center ${tone.iconBg}`}>
                 <tone.Icon className={`w-5 h-5 ${tone.iconClass}`} />
               </span>
               <div className="flex-1 min-w-0">
-                <h2 id="confirm-title" className="text-base font-semibold text-charcoal-900 leading-snug">
+                <h2 id="confirm-title" className="text-base font-bold text-slate-900 leading-snug">
                   {request.title}
                 </h2>
                 {request.message && (
-                  <p id="confirm-message" className="mt-1.5 text-sm text-charcoal-600 leading-relaxed">
+                  <p id="confirm-message" className="mt-1.5 text-xs font-medium text-slate-700 leading-relaxed">
                     {request.message}
                   </p>
                 )}
                 {request.detail && (
-                  <p className="mt-3 text-xs font-mono text-charcoal-500 bg-cream-200 border border-cream-300/70 rounded-lg px-3 py-2 break-all">
+                  <p
+                    className="mt-3 text-xs font-mono font-semibold text-slate-800 bg-slate-100 border border-slate-300 rounded-md px-3 py-2 break-all shadow-inner"
+                    style={{ backgroundColor: '#f1f5f9', color: '#1e293b' }}
+                  >
                     {request.detail}
                   </p>
                 )}

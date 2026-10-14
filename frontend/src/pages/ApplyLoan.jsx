@@ -352,91 +352,110 @@ export default function ApplyLoan() {
                   icon={ShieldCheck}
                   step="3"
                   title={t('amount_income_title')}
-                  description="Used to estimate your EMI and check eligibility"
+                  description="Required for eligibility underwriting & EMI calculations"
                 >
-                  <div className="grid sm:grid-cols-2 gap-5">
-                    <TextField
-                      label="Loan amount"
-                      name="requestedAmount"
-                      type="number"
-                      prefix="₹"
-                      value={form.values.requestedAmount}
-                      onChange={form.handleChange}
-                      onBlur={form.handleBlur}
-                      error={form.touched.requestedAmount ? form.errors.requestedAmount : null}
-                      helperText="Between ₹10,000 and ₹10 crore"
-                      placeholder="1500000"
-                      min="10000"
-                      required
-                    />
+                  {/* Group 1: LOAN DETAILS */}
+                  <div className="space-y-4 pb-6 border-b border-slate-200">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        Group A · Loan Details
+                      </span>
+                    </div>
 
-                    <TextField
-                      label="Tenure"
-                      name="tenureMonths"
-                      type="number"
-                      value={form.values.tenureMonths}
-                      onChange={form.handleChange}
-                      onBlur={form.handleBlur}
-                      error={form.touched.tenureMonths ? form.errors.tenureMonths : null}
-                      helperText={`In months · ${loanTypeDetail?.tenure || 'up to 30 years'} for this product`}
-                      placeholder="36"
-                      min="6"
-                      max="360"
-                      required
-                    />
+                    <div className="grid sm:grid-cols-2 gap-5">
+                      <TextField
+                        label="Loan Amount Requested"
+                        name="requestedAmount"
+                        type="number"
+                        prefix="₹"
+                        value={form.values.requestedAmount}
+                        onChange={form.handleChange}
+                        onBlur={form.handleBlur}
+                        error={form.touched.requestedAmount ? form.errors.requestedAmount : null}
+                        helperText="Between ₹10,000 and ₹10,00,00,000"
+                        placeholder="1500000"
+                        min="10000"
+                        required
+                      />
+
+                      <TextField
+                        label="Desired Tenure"
+                        name="tenureMonths"
+                        type="number"
+                        value={form.values.tenureMonths}
+                        onChange={form.handleChange}
+                        onBlur={form.handleBlur}
+                        error={form.touched.tenureMonths ? form.errors.tenureMonths : null}
+                        helperText={`In months · max ${loanTypeDetail?.tenure || '30 years'}`}
+                        placeholder="36"
+                        min="6"
+                        max="360"
+                        required
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <span className="text-xs text-slate-500 flex items-center mr-1">Quick tenure:</span>
+                      {tenureOptions.map((months) => {
+                        const isActive = Number(form.values.tenureMonths) === months;
+                        return (
+                          <button
+                            type="button"
+                            key={months}
+                            onClick={() => form.setFieldValue('tenureMonths', months)}
+                            className={`text-xs font-mono font-medium rounded-md px-2.5 py-1 border transition-colors cursor-pointer ${
+                              isActive
+                                ? 'border-emerald-600 bg-emerald-600 text-white'
+                                : 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                            }`}
+                          >
+                            {formatMonths(months)}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {tenureOptions.map((months) => {
-                      const isActive = Number(form.values.tenureMonths) === months;
-                      return (
-                        <button
-                          type="button"
-                          key={months}
-                          onClick={() => form.setFieldValue('tenureMonths', months)}
-                          className={`text-xs font-medium rounded-full px-3 py-1.5 border transition-colors cursor-pointer ${
-                            isActive
-                              ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                              : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
-                          }`}
-                        >
-                          {formatMonths(months)}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {/* Group 2: FINANCIAL DETAILS */}
+                  <div className="space-y-4 pt-6">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                        Group B · Financial Profile
+                      </span>
+                    </div>
 
-                  <div className="grid sm:grid-cols-2 gap-5 mt-5">
-                    <SelectField
-                      label="Employment type"
-                      name="employmentType"
-                      value={form.values.employmentType}
-                      onChange={form.handleChange}
-                      onBlur={form.handleBlur}
-                      options={EMPLOYMENT_TYPES}
-                      placeholder="Select employment type"
-                      error={form.touched.employmentType ? form.errors.employmentType : null}
-                      required
-                    />
+                    <div className="grid sm:grid-cols-2 gap-5">
+                      <SelectField
+                        label="Employment Type"
+                        name="employmentType"
+                        value={form.values.employmentType}
+                        onChange={form.handleChange}
+                        onBlur={form.handleBlur}
+                        options={EMPLOYMENT_TYPES}
+                        placeholder="Select employment status"
+                        error={form.touched.employmentType ? form.errors.employmentType : null}
+                        required
+                      />
 
-                    <TextField
-                      label="Monthly net income"
-                      name="declaredMonthlyIncome"
-                      type="number"
-                      prefix="₹"
-                      value={form.values.declaredMonthlyIncome}
-                      onChange={form.handleChange}
-                      onBlur={form.handleBlur}
-                      error={
-                        form.touched.declaredMonthlyIncome
-                          ? form.errors.declaredMonthlyIncome
-                          : null
-                      }
-                      helperText="Take-home pay, after deductions"
-                      placeholder="75000"
-                      min="1000"
-                      required
-                    />
+                      <TextField
+                        label="Declared Monthly Net Income"
+                        name="declaredMonthlyIncome"
+                        type="number"
+                        prefix="₹"
+                        value={form.values.declaredMonthlyIncome}
+                        onChange={form.handleChange}
+                        onBlur={form.handleBlur}
+                        error={
+                          form.touched.declaredMonthlyIncome
+                            ? form.errors.declaredMonthlyIncome
+                            : null
+                        }
+                        helperText="Take-home monthly income after deductions"
+                        placeholder="75000"
+                        min="1000"
+                        required
+                      />
+                    </div>
                   </div>
                 </SectionCard>
 

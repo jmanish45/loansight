@@ -1,7 +1,9 @@
+const mongoose = require('mongoose');
 const LoanApplication = require('../models/LoanApplication');
 const Activity = require('../models/Activity');
 const Document = require('../models/Document');
 const ValidationResult = require('../models/ValidationResult');
+const applicationStore = require('../store/applicationStore');
 
 /**
  * Applicant-facing notification feed.
@@ -84,10 +86,26 @@ const shorten = (text, max = 160) => {
 };
 
 const getApplicantNotifications = async (userId) => {
-  const applications = await LoanApplication.find({ applicant: userId })
-    .select('loanType requestedAmount bankName bankId status createdAt updatedAt')
-    .sort({ createdAt: -1 })
-    .lean();
+  let applications = [];
+  if (mongoose.connection.readyState === 1) {
+    try {
+      applications = await LoanApplication.find({ applicant: userId })
+        .select('loanType requestedAmount bankName bankId status createdAt updatedAt')
+        .sort({ createdAt: -1 })
+        .lean();
+    } catch (err) {
+      console.warn('[Notification] DB query failed:', err.message);
+    }
+  }
+
+  const memApps = applicationStore.getApplicationsForUser(userId);
+  const existingIds = new Set(applications.map((a) => String(a._id)));
+
+  for (const ma of memApps) {
+    if (!existingIds.has(String(ma._id))) {
+      applications.unshift(ma);
+    }
+  }
 
   if (applications.length === 0) {
     return { notifications: [], counts: { total: 0, unresolvedIssues: 0, actionRequired: 0 } };
@@ -96,21 +114,32 @@ const getApplicantNotifications = async (userId) => {
   const ids = applications.map((app) => app._id);
   const appById = new Map(applications.map((app) => [String(app._id), app]));
 
-  const [activities, documents, validations] = await Promise.all([
-    Activity.find({
-      application: { $in: ids },
-      action: { $in: ['Status Changed', 'Document Rejected'] },
-    })
-      .sort({ createdAt: -1 })
-      .limit(80)
-      .lean(),
-    Document.find({ application: { $in: ids } })
-      .select('application documentType originalName status reviewComment updatedAt')
-      .lean(),
-    ValidationResult.find({ application: { $in: ids } })
-      .select('application status riskLevel checks validatedAt')
-      .lean(),
-  ]);
+  let activities = [];
+  let documents = [];
+  let validations = [];
+
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const validDbIds = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
+      [activities, documents, validations] = await Promise.all([
+        Activity.find({
+          application: { $in: validDbIds },
+          action: { $in: ['Status Changed', 'Document Rejected'] },
+        })
+          .sort({ createdAt: -1 })
+          .limit(80)
+          .lean(),
+        Document.find({ application: { $in: validDbIds } })
+          .select('application documentType originalName status reviewComment updatedAt')
+          .lean(),
+        ValidationResult.find({ application: { $in: validDbIds } })
+          .select('application status riskLevel checks validatedAt')
+          .lean(),
+      ]);
+    } catch (e) {
+      console.warn('[Notification] Sub-queries failed:', e.message);
+    }
+  }
 
   // ── Per-application issue lists, derived from the deterministic checks ──
   const issuesByApp = new Map();

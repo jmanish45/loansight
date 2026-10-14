@@ -9,12 +9,20 @@ const api = axios.create({
   withCredentials: true,
 });
 
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('loansight_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
     if (error.response?.status === 401 && window.location.pathname !== '/login') {
-      // Optional: you can redirect to login here if you want a hard redirect
-      // window.location.href = '/login';
+      localStorage.removeItem('loansight_token');
+      localStorage.removeItem('loansight_user');
     }
     const message =
       error.response?.data?.message || error.message || 'An unexpected error occurred';

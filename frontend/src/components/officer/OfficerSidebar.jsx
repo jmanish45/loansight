@@ -29,28 +29,28 @@ function NavContents({ counts, onNavigate }) {
   const { t } = useLanguage();
 
   const NAV_ITEMS = [
-    { key: 'dashboard', label: t('dashboard'), icon: LayoutDashboard, to: ROUTES.OFFICER },
-    { key: 'all', label: t('all_applications'), icon: Files, to: ROUTES.OFFICER_APPLICATIONS },
+    { key: 'dashboard', label: t('dashboard', 'Dashboard'), icon: LayoutDashboard, to: ROUTES.OFFICER },
+    { key: 'all', label: t('all_applications', 'All Applications'), icon: Files, to: ROUTES.OFFICER_APPLICATIONS },
   ];
 
   const QUEUE_ITEMS = [
     {
       key: 'submitted',
-      label: t('new_submissions'),
+      label: t('new_submissions', 'New Submissions'),
       icon: Inbox,
       status: 'submitted',
       countKey: 'submitted',
     },
     {
       key: 'under_review',
-      label: t('under_review'),
+      label: t('under_review', 'Under Review'),
       icon: ClipboardCheck,
       status: 'under_review',
       countKey: 'underReview',
     },
     {
       key: 'documents_required',
-      label: t('documents_required'),
+      label: t('documents_required', 'Documents Required'),
       icon: AlertTriangle,
       status: 'documents_required',
       countKey: 'docsRequired',
@@ -72,14 +72,16 @@ function NavContents({ counts, onNavigate }) {
 
   return (
     <>
-      <div className="flex items-center gap-3 h-16 px-5 border-b border-white/5 shrink-0">
-        <BrandLogo to={null} variant="light" size="sm" showBadge={false} />
-        <span className="block text-[11px] text-slate-400 truncate">Officer workspace</span>
+      <div className="flex items-center justify-between h-16 px-5 border-b border-white/5 shrink-0">
+        <BrandLogo to={null} variant="light" size="sm" showBadge={true} />
+        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+          {t('officer_badge', 'Officer')}
+        </span>
       </div>
 
       <nav aria-label="Officer navigation" className="px-3 pt-5 overflow-y-auto">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-3 mb-2">
-          {t('menu')}
+          {t('menu', 'Menu')}
         </p>
         <ul className="space-y-1">
           {NAV_ITEMS.map((item) => {
@@ -108,7 +110,7 @@ function NavContents({ counts, onNavigate }) {
         </ul>
 
         <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-3 mt-6 mb-2">
-          {t('work_queue')}
+          {t('work_queue', 'Work Queue')}
         </p>
         <ul className="space-y-1">
           {QUEUE_ITEMS.map((item) => {
@@ -152,11 +154,11 @@ function NavContents({ counts, onNavigate }) {
       <div className="mt-auto p-3 space-y-2">
         <div className="bg-navy-800 border border-white/5 rounded-xl p-3">
           <p className="text-xs font-medium text-white mb-1">
-            {initialsOf(user?.name) ? `Officer ${user?.name}` : 'Officer Workspace'}
+            {initialsOf(user?.name) ? `${t('officer_badge', 'Officer')} ${user?.name}` : t('officer_workspace', 'Officer Workspace')}
           </p>
           <p className="text-[11px] text-slate-400 leading-relaxed flex items-start gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-px" aria-hidden="true" />
-            Every decision you record is written to the application audit trail.
+            {t('officer_audit_notice', 'Every decision you record is written to the application audit trail.')}
           </p>
         </div>
 
@@ -166,7 +168,7 @@ function NavContents({ counts, onNavigate }) {
           className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/5 hover:text-white transition-colors cursor-pointer"
         >
           <LogOut className="w-[18px] h-[18px] shrink-0" aria-hidden="true" />
-          {t('sign_out')}
+          {t('sign_out', 'Sign Out')}
         </button>
       </div>
     </>

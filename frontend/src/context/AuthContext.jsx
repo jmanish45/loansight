@@ -11,9 +11,24 @@ export function AuthProvider({ children }) {
     const checkAuth = async () => {
       try {
         const response = await api.get('/auth/me');
-        setUser(response.data);
+        const userData = response.data?.data || response.data;
+        if (userData && userData._id) {
+          setUser(userData);
+          localStorage.setItem('loansight_user', JSON.stringify(userData));
+        } else {
+          throw new Error('No user data returned');
+        }
       } catch (error) {
-        setUser(null);
+        const saved = localStorage.getItem('loansight_user');
+        if (saved) {
+          try {
+            setUser(JSON.parse(saved));
+          } catch (e) {
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
       } finally {
         setLoading(false);
       }
@@ -24,14 +39,30 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const response = await api.post('/auth/login', { email, password });
-    setUser(response.data);
-    return response.data;
+    const token = response.token || response.data?.token;
+    const userData = response.data?.data || response.data;
+    if (token) {
+      localStorage.setItem('loansight_token', token);
+    }
+    setUser(userData);
+    if (userData) {
+      localStorage.setItem('loansight_user', JSON.stringify(userData));
+    }
+    return userData;
   };
 
   const register = async (name, email, password) => {
     const response = await api.post('/auth/register', { name, email, password });
-    setUser(response.data);
-    return response.data;
+    const token = response.token || response.data?.token;
+    const userData = response.data?.data || response.data;
+    if (token) {
+      localStorage.setItem('loansight_token', token);
+    }
+    setUser(userData);
+    if (userData) {
+      localStorage.setItem('loansight_user', JSON.stringify(userData));
+    }
+    return userData;
   };
 
   const logout = async () => {
@@ -40,6 +71,8 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error('Logout failed', error);
     } finally {
+      localStorage.removeItem('loansight_token');
+      localStorage.removeItem('loansight_user');
       setUser(null);
     }
   };

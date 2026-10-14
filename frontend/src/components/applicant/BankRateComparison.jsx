@@ -1,13 +1,15 @@
 import { bankBrand } from '../common/BankLogo';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function BankRateComparison({ rates = [], highlightBankId = null, loanTypeLabel = '' }) {
+  const { t } = useLanguage();
   const shell = 'bg-white border border-slate-200 rounded-xl p-5 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)]';
 
   if (!Array.isArray(rates) || rates.length === 0) {
     return (
       <section className={shell}>
-        <h2 className="text-[15px] font-semibold text-slate-900">Partner Bank Rates</h2>
-        <p className="text-sm text-slate-400 text-center py-10">Rate information unavailable.</p>
+        <h2 className="text-[15px] font-semibold text-slate-900">{t('partner_bank_rates', 'Partner Bank Rates')}</h2>
+        <p className="text-sm text-slate-400 text-center py-10">{t('rate_unavailable', 'Rate information unavailable.')}</p>
       </section>
     );
   }
@@ -23,9 +25,9 @@ export default function BankRateComparison({ rates = [], highlightBankId = null,
 
   return (
     <section className={shell}>
-      <h2 className="text-[15px] font-semibold text-slate-900">Partner Bank Rates</h2>
+      <h2 className="text-[15px] font-semibold text-slate-900">{t('partner_bank_rates', 'Partner Bank Rates')}</h2>
       <p className="text-xs text-slate-400 mt-0.5">
-        Advertised starting rates, lowest first{loanTypeLabel ? ` · ${loanTypeLabel}` : ''}
+        {t('partner_rates_sub', 'Advertised starting rates, lowest first')}{loanTypeLabel ? ` · ${loanTypeLabel}` : ''}
       </p>
 
       <div className="space-y-3 mt-5">
@@ -44,7 +46,7 @@ export default function BankRateComparison({ rates = [], highlightBankId = null,
                 />
                 <div className="min-w-0">
                   <p className="text-[11px] font-semibold text-slate-600 truncate">{bank.shortName}</p>
-                  {isYours && <p className="text-[10px] text-navy-700">Your bank</p>}
+                  {isYours && <p className="text-[10px] text-navy-700">{t('your_bank', 'Your bank')}</p>}
                 </div>
               </div>
 

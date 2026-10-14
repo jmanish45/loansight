@@ -14,6 +14,7 @@ export default function Select({
   disabled = false,
   required = false,
   className = '',
+  ...props
 }) {
   const id = useId();
 
@@ -22,10 +23,10 @@ export default function Select({
       {label && (
         <label
           htmlFor={id}
-          className="text-sm font-medium text-charcoal-700"
+          className="text-xs font-semibold uppercase tracking-wider text-slate-600"
         >
           {label}
-          {required && <span className="text-error-600 ml-0.5">*</span>}
+          {required && <span className="text-red-600 ml-1" aria-hidden="true">*</span>}
         </label>
       )}
       <div className="relative">
@@ -40,18 +41,17 @@ export default function Select({
           aria-invalid={!!error}
           aria-describedby={error ? `${id}-error` : helperText ? `${id}-helper` : undefined}
           className={`
-            w-full px-4 py-2.5 pr-10 rounded-lg
-            text-charcoal-900 text-sm
-            bg-white border appearance-none
-            transition-all duration-200
-            focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-transparent
-            disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-cream-200
-            ${!value ? 'text-charcoal-300' : ''}
+            w-full h-9.5 px-3 pr-9 rounded-md text-sm text-slate-900 bg-white border appearance-none
+            transition-colors duration-150 ease-in-out cursor-pointer
+            focus:outline-none focus:ring-2 focus:ring-sky-600 focus:border-sky-600
+            disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-100
+            ${!value ? 'text-slate-400' : ''}
             ${error
-              ? 'border-error-600 focus:ring-error-600'
-              : 'border-charcoal-200 hover:border-charcoal-300'
+              ? 'border-red-600 focus:ring-red-600 focus:border-red-600'
+              : 'border-slate-300 hover:border-slate-400'
             }
           `}
+          {...props}
         >
           <option value="" disabled>
             {placeholder}
@@ -62,15 +62,15 @@ export default function Select({
             </option>
           ))}
         </select>
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-charcoal-400 pointer-events-none" />
+        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" aria-hidden="true" />
       </div>
       {error && (
-        <p id={`${id}-error`} className="text-xs text-error-600" role="alert">
+        <p id={`${id}-error`} className="text-xs font-medium text-red-600" role="alert">
           {error}
         </p>
       )}
       {!error && helperText && (
-        <p id={`${id}-helper`} className="text-xs text-charcoal-400">
+        <p id={`${id}-helper`} className="text-xs text-slate-500">
           {helperText}
         </p>
       )}

@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     mistral_api_key: str = ""
     mistral_model: str = "mistral-small-2506"
     groq_api_key: str = ""
-    groq_model: str = "llama-3.3-70b-versatile"
+    groq_model: str = "qwen/qwen3.8-27b"
     max_file_size_mb: int = 10
     allowed_extensions: list[str] = [".pdf", ".jpg", ".jpeg", ".png"]
 

@@ -251,11 +251,14 @@ async def process_document_mistral_endpoint(
         logger.info(f"[Mistral Pipeline] Structured extraction complete: {list(extracted_data.keys()) if extracted_data else []}")
 
         # Map document_type to DocumentType enum
-        doc_type_upper = document_type.upper().replace(" ", "_")
-        try:
-            target_doc_type = DocumentType(doc_type_upper)
-        except ValueError:
-            target_doc_type = DocumentType.OTHER
+        doc_type_norm = document_type.lower().replace(" ", "_").replace("-", "_")
+        if doc_type_norm in ("form16", "form_16"):
+            target_doc_type = DocumentType.FORM_16
+        else:
+            try:
+                target_doc_type = DocumentType(doc_type_norm.upper())
+            except ValueError:
+                target_doc_type = DocumentType.OTHER
 
         return ProcessingResult(
             document_type=target_doc_type,

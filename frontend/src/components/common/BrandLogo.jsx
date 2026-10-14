@@ -2,15 +2,12 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
 
-export function LoanSightEmblem({ className = 'w-8 h-8', glow = true }) {
+export function LoanSightEmblem({ className = 'w-8 h-8' }) {
   return (
     <div className={`relative shrink-0 flex items-center justify-center ${className}`}>
-      {glow && (
-        <span className="absolute inset-0 rounded-xl bg-emerald-500/25 blur-md -z-10 transform scale-110" />
-      )}
       <svg
         viewBox="0 0 100 100"
-        className="w-full h-full drop-shadow-[0_2px_8px_rgba(16,185,129,0.3)]"
+        className="w-full h-full"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >

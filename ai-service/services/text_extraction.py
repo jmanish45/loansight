@@ -71,7 +71,21 @@ def extract_text_from_pdf(
         logger.error(f"PyMuPDF text extraction failed: {e}")
 
     full_text = "\n\n".join(text_parts)
-    has_text = len(full_text.strip()) > 10
+    has_native_text = len(full_text.strip()) >= 40
+    engine = "pymupdf"
+
+    if not has_native_text:
+        logger.info(f"Native PDF text layer short ({len(full_text.strip())} chars). Triggering Tesseract OCR fallback...")
+        try:
+            with fitz.open(stream=file_bytes, filetype="pdf") as doc:
+                ocr_text = _ocr_pdf_pages(doc, max_pages=page_limit if page_limit else 5)
+                if ocr_text.strip():
+                    full_text = ocr_text.strip()
+                    engine = "tesseract_pdf"
+        except Exception as ocr_err:
+            logger.warning(f"PDF OCR fallback failed: {ocr_err}")
+
+    has_text = len(full_text.strip()) > 5
 
     return {
         "text": full_text,
@@ -79,9 +93,63 @@ def extract_text_from_pdf(
         "page_count": page_count,
         "pages_read": pages_read,
         "has_text": has_text,
-        "ocr_engine": "pymupdf",
+        "ocr_engine": engine,
         "needs_vision": False,
     }
+
+
+def _ocr_pdf_pages(doc: fitz.Document, max_pages: int = 5) -> str:
+    """Render PDF pages to pixmaps and run RapidOCR / Tesseract OCR."""
+    ocr_parts = []
+    pages_to_ocr = min(len(doc), max_pages)
+
+    # 1. Try RapidOCR first (native CPU ONNX model, robust, no external binaries required)
+    try:
+        from rapidocr_onnxruntime import RapidOCR
+        rapid_engine = RapidOCR()
+        for page_idx in range(pages_to_ocr):
+            pix = doc[page_idx].get_pixmap(dpi=200)
+            result, _ = rapid_engine(pix.tobytes("png"))
+            if result:
+                lines = [line[1].strip() for line in result if line[1].strip()]
+                if lines:
+                    ocr_parts.append("\n".join(lines))
+        if ocr_parts:
+            return "\n\n".join(ocr_parts)
+    except Exception as rapid_err:
+        logger.warning(f"RapidOCR PDF fallback error: {rapid_err}")
+
+    # 2. Secondary fallback: Tesseract OCR
+    import os
+    import io
+    import numpy as np
+    from PIL import Image, ImageOps
+    import pytesseract
+
+    tesseract_windows_path = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    if os.path.exists(tesseract_windows_path):
+        pytesseract.pytesseract.tesseract_cmd = tesseract_windows_path
+
+    zoom = 300 / 72
+    matrix = fitz.Matrix(zoom, zoom)
+    for page_idx in range(pages_to_ocr):
+        try:
+            pix = doc[page_idx].get_pixmap(matrix=matrix)
+            img = Image.open(io.BytesIO(pix.tobytes("png"))).convert("L")
+            img = ImageOps.autocontrast(img)
+            arr = np.array(img)
+            threshold = arr.mean() * 0.9
+            binarized = np.where(arr > threshold, 255, 0).astype(np.uint8)
+            processed_img = Image.fromarray(binarized)
+            page_text = pytesseract.image_to_string(processed_img, config="--oem 3 --psm 6")
+            if not page_text.strip():
+                page_text = pytesseract.image_to_string(processed_img, config="--oem 3 --psm 3")
+            if page_text.strip():
+                ocr_parts.append(page_text.strip())
+        except Exception as err:
+            logger.warning(f"OCR page {page_idx} error: {err}")
+
+    return "\n\n".join(ocr_parts)
 
 
 def compact_bank_statement(text: str, tables: list) -> str:
@@ -113,50 +181,118 @@ def compact_bank_statement(text: str, tables: list) -> str:
     return compact_text
 
 
-def _preprocess_image_for_ocr(image_bytes: bytes):
-    """Lazy-load heavy OCR deps only when processing images."""
-    import cv2
-    import numpy as np
-
-    nparr = np.frombuffer(image_bytes, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    height, width = gray.shape
-    if height < 1000 or width < 1000:
-        gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
-
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    return clahe.apply(gray)
+def _preprocess_image_for_ocr(file_bytes: bytes):
+    from PIL import Image, ImageOps
+    import io
+    img = Image.open(io.BytesIO(file_bytes))
+    return ImageOps.autocontrast(img.convert("L"))
 
 
 def extract_text_from_image(file_bytes: bytes) -> dict:
-    """Handle image files with Tesseract (lazy-loaded)."""
+    """Extract text from image files using RapidOCR (with Tesseract fallback)."""
+    # 1. Try RapidOCR first (CPU ONNX, high precision, handles skewed / low-res ID cards)
     try:
+        from rapidocr_onnxruntime import RapidOCR
+        rapid_engine = RapidOCR()
+        result, _ = rapid_engine(file_bytes)
+        if result:
+            lines = [line[1].strip() for line in result if line[1].strip()]
+            text = "\n".join(lines)
+            if len(text.strip()) > 5:
+                return {
+                    "text": text,
+                    "tables": [],
+                    "page_count": 1,
+                    "has_text": True,
+                    "ocr_engine": "rapidocr",
+                    "needs_vision": False,
+                }
+    except Exception as rapid_err:
+        logger.warning(f"RapidOCR image extraction error: {rapid_err}")
+
+    # 2. Secondary fallback: Tesseract OCR
+    try:
+        import os
         import pytesseract
 
-        pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+        tesseract_windows_path = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+        if os.path.exists(tesseract_windows_path):
+            pytesseract.pytesseract.tesseract_cmd = tesseract_windows_path
+
         processed_img = _preprocess_image_for_ocr(file_bytes)
         text = pytesseract.image_to_string(processed_img, config="--oem 3 --psm 3").strip()
-        has_text = len(text) > 20
-        return {
-            "text": text if has_text else "[Image uploaded for record storage]",
-            "tables": [],
-            "page_count": 1,
-            "has_text": True,
-            "ocr_engine": "tesseract" if has_text else "stored_image",
-            "needs_vision": False,
-        }
+        
+        if len(text) < 15:
+            text_psm6 = pytesseract.image_to_string(processed_img, config="--oem 3 --psm 6").strip()
+            if len(text_psm6) > len(text):
+                text = text_psm6
+
+        if len(text) < 15:
+            from PIL import Image
+            import io
+            raw_img = Image.open(io.BytesIO(file_bytes))
+            text_raw = pytesseract.image_to_string(raw_img, config="--oem 3 --psm 3").strip()
+            if len(text_raw) > len(text):
+                text = text_raw
+
+        if len(text) > 10:
+            return {
+                "text": text,
+                "tables": [],
+                "page_count": 1,
+                "has_text": True,
+                "ocr_engine": "tesseract",
+                "needs_vision": False,
+            }
     except Exception as e:
-        logger.info(f"Image text extraction info: {e}")
-        return {
-            "text": "[Image uploaded for record storage]",
-            "tables": [],
-            "page_count": 1,
-            "has_text": True,
-            "ocr_engine": "stored_image",
-            "needs_vision": False,
-        }
+        logger.warning(f"Local OCR extraction error: {e}")
+
+    # 3. Cloud Vision Fallback (Pixtral-12b via Mistral): Zero-dependency cloud OCR for Render / headless Linux
+    try:
+        import base64
+        import os
+        from langchain_mistralai import ChatMistralAI
+        from langchain_core.messages import HumanMessage
+        from config import get_settings
+
+        settings = get_settings()
+        api_key = settings.mistral_api_key or os.getenv("MISTRAL_API_KEY", "")
+        if api_key:
+            b64_img = base64.b64encode(file_bytes).decode("utf-8")
+            mime = "image/png" if file_bytes.startswith(b"\x89PNG") else "image/jpeg"
+            llm = ChatMistralAI(model="pixtral-12b-2409", mistral_api_key=api_key, temperature=0)
+            msg = HumanMessage(
+                content=[
+                    {
+                        "type": "text",
+                        "text": "Extract all text on this identity card verbatim. Include Name, Father's Name, Date of Birth, Gender, Address, and PAN or Aadhaar number.",
+                    },
+                    {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64_img}"}},
+                ]
+            )
+            res = llm.invoke([msg])
+            content = res.content if hasattr(res, "content") else str(res)
+            if content and len(content.strip()) > 10:
+                logger.info(f"[Vision OCR] Pixtral successfully transcribed {len(content)} chars from image.")
+                return {
+                    "text": content.strip(),
+                    "tables": [],
+                    "page_count": 1,
+                    "has_text": True,
+                    "ocr_engine": "pixtral-vision",
+                    "needs_vision": True,
+                }
+    except Exception as vision_err:
+        logger.warning(f"[Vision OCR] Pixtral transcription error: {vision_err}")
+
+    return {
+        "text": "",
+        "tables": [],
+        "page_count": 1,
+        "has_text": False,
+        "ocr_engine": "failed",
+        "needs_vision": False,
+    }
 
 
 def extract_text(

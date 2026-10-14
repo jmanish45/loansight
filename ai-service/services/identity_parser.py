@@ -71,21 +71,94 @@ def _find_labeled_value(text: str, pattern: re.Pattern) -> Optional[str]:
     return None
 
 
+def _normalize_name(name: Optional[str]) -> Optional[str]:
+    if not name:
+        return None
+    cleaned = re.sub(r"\s+", " ", name).strip()
+    # Split camelCase e.g., AjitChavan -> Ajit Chavan
+    cleaned = re.sub(r"([a-z])([A-Z])", r"\1 \2", cleaned)
+
+    # If it's a single concatenated word (e.g. Ajitchavan)
+    if " " not in cleaned and len(cleaned) >= 6:
+        common_surnames = [
+            "chavan", "kadam", "sawant", "sharma", "patil", "pawar", "deshmukh",
+            "kumar", "singh", "patel", "verma", "gupta", "joshi", "yadav", "shah",
+            "mishra", "tiwari", "pandey", "reddy", "nair", "rao", "bose", "sen",
+            "das", "ghosh", "roy", "bhatt", "shukla", "tripathi", "agarwal", "mehta"
+        ]
+        lower = cleaned.lower()
+        for s in common_surnames:
+            if lower.endswith(s) and len(lower) > len(s) + 2:
+                first = cleaned[: len(cleaned) - len(s)].strip()
+                last = cleaned[len(cleaned) - len(s) :].strip()
+                cleaned = f"{first.capitalize()} {last.capitalize()}"
+                break
+    return cleaned.title()
+
+
 def _find_pan_number(text: str) -> Optional[str]:
     upper = text.upper()
+    # 1. Standard Indian PAN (5 letters, 4 digits, 1 letter)
     match = PAN_PATTERN.search(upper)
-    return _normalize_pan(match.group(1)) if match else None
+    if match:
+        return _normalize_pan(match.group(1))
+
+    # 2. Check lines immediately following "Permanent Account"
+    lines = [ln.strip() for ln in upper.splitlines() if ln.strip()]
+    for i, line in enumerate(lines):
+        if "PERMANENT" in line or "ACCOUNT NUMBER" in line or "CARD" in line or "स्थायी लेखा" in line:
+            for nxt in lines[i + 1 : i + 3]:
+                cand = re.sub(r"[^A-Z0-9]", "", nxt)
+                if len(cand) == 10 and any(c.isdigit() for c in cand) and any(c.isalpha() for c in cand):
+                    return cand
+
+    # 3. 10-char alphanumeric fallback containing mixed letters and digits
+    for m in re.finditer(r"\b([A-Z0-9]{10})\b", upper):
+        token = m.group(1)
+        if any(c.isdigit() for c in token) and any(c.isalpha() for c in token):
+            if not any(k in token for k in ["DEPARTMENT", "GOVERNMENT", "INCOMETAX"]):
+                return token
+
+    return None
 
 
 def _find_aadhaar_number(text: str) -> Optional[str]:
+    # 1. Masked Aadhaar (e.g. XXXX-XXXX-9012 or XXXX XXXX 9012)
+    masked = re.search(r"\b([Xx]{4}[\s-]?[Xx]{4}[\s-]?\d{4})\b", text)
+    if masked:
+        return re.sub(r"[\s]", "-", masked.group(1).upper())
+
+    # 2. Standard 12-digit format with spaces/hyphens
     for match in AADHAAR_PATTERN.finditer(text):
         normalized = _normalize_aadhaar(match.group(1))
         if len(normalized) == 12:
             return normalized
+
+    # 3. Across newlines (e.g. 7693 5093 \n 3092)
+    digits_match = re.search(r"\b(\d{4})[\s\n]+(\d{4})[\s\n]+(\d{4})\b", text)
+    if digits_match:
+        return f"{digits_match.group(1)}{digits_match.group(2)}{digits_match.group(3)}"
+
     return None
 
 
-def _is_noise_or_label_pan(line: str) -> bool:
+def _find_gender(text: str) -> Optional[str]:
+    match = re.search(r"\b(Male|Female|Transgender)\b", text, re.IGNORECASE)
+    if match:
+        val = match.group(1).lower()
+        if val in ("male", "m"):
+            return "Male"
+        elif val in ("female", "f"):
+            return "Female"
+        return "Transgender"
+    if re.search(r"पुरुष|पुरूष", text):
+        return "Male"
+    if re.search(r"महिला|स्त्री", text):
+        return "Female"
+    return None
+
+
+def _is_noise_or_label_pan(line: str, pan_number: Optional[str] = None) -> bool:
     """Check if a line is a header, metadata, label, or noise in a PAN card."""
     if not line:
         return True
@@ -111,14 +184,28 @@ def _is_noise_or_label_pan(line: str) -> bool:
         return True
 
     # PAN Number or DOB pattern on line
-    if PAN_PATTERN.search(upper):
+    if PAN_PATTERN.search(upper) or (pan_number and pan_number in upper):
         return True
     for dp in DOB_PATTERNS:
         if dp.search(upper):
             return True
 
-    # Pure digits/symbols
+    # Pure digits/symbols or mixed 10-char alphanumeric
+    cand_alpha_num = re.sub(r"[^A-Z0-9]", "", upper)
+    if len(cand_alpha_num) == 10 and any(c.isdigit() for c in cand_alpha_num) and any(c.isalpha() for c in cand_alpha_num):
+        return True
+
     if not re.search(r"[A-Za-z]", cleaned):
+        return True
+
+    # Sample/Demo watermarks
+    if any(w in upper for w in ["SAMPLE", "DEMO", "NOT AN ORIGINAL", "DEMONSTRATION"]):
+        return True
+
+    # Gibberish lines without vowels or with excessive consonant clusters
+    if not re.search(r"[aeiouyAEIOUY]", cleaned):
+        return True
+    if re.search(r"[BCDFGHJKLMNPQRSTVWXZbcdfghjklmnpqrstvwxz]{5,}", cleaned):
         return True
 
     return False
@@ -211,12 +298,14 @@ def _find_holder_name_pan(text: str, pan_number: Optional[str] = None, fathers_n
 
 def parse_pan_text(text: str) -> dict:
     """Extract structured PAN fields from native PDF / OCR text."""
-    if not text or len(text.strip()) < 10:
+    if not text or len(text.strip()) < 5:
         return {}
 
     pan_number = _find_pan_number(text)
-    fathers_name = _find_fathers_name_after_label(text)
-    name = _find_holder_name_pan(text, pan_number=pan_number, fathers_name=fathers_name)
+    fathers_name = _normalize_name(_find_fathers_name_after_label(text))
+    name = _normalize_name(_find_holder_name_pan(text, pan_number=pan_number, fathers_name=fathers_name))
+    if name and name.lower() == "image uploaded for record storage":
+        name = None
     date_of_birth = _find_dob(text)
 
     data = PanCardData(
@@ -304,13 +393,15 @@ def _find_holder_name_aadhaar(text: str) -> Optional[str]:
 
 def parse_aadhaar_text(text: str) -> dict:
     """Extract structured Aadhaar fields from native PDF / OCR text."""
-    if not text or len(text.strip()) < 10:
+    if not text or len(text.strip()) < 5:
         return {}
 
     aadhaar_number = _find_aadhaar_number(text)
-    name = _find_holder_name_aadhaar(text)
+    name = _normalize_name(_find_holder_name_aadhaar(text))
+    if name and name.lower() == "image uploaded for record storage":
+        name = None
     date_of_birth = _find_dob(text) or _find_labeled_value(text, AADHAAR_LABELS["date_of_birth"])
-    gender = _find_labeled_value(text, AADHAAR_LABELS["gender"])
+    gender = _find_gender(text) or _find_labeled_value(text, AADHAAR_LABELS["gender"])
     address = _find_labeled_value(text, AADHAAR_LABELS["address"])
 
     if date_of_birth:
@@ -319,23 +410,6 @@ def parse_aadhaar_text(text: str) -> dict:
             if dob_match:
                 date_of_birth = dob_match.group(1).strip()
                 break
-
-    if not date_of_birth:
-        for pat in DOB_PATTERNS:
-            dob_match = pat.search(text)
-            if dob_match:
-                date_of_birth = dob_match.group(1).strip()
-                break
-        if not date_of_birth:
-            yob_match = YOB_PATTERN.search(text)
-            if yob_match:
-                date_of_birth = yob_match.group(0)
-
-    if not gender:
-        gender_match = GENDER_PATTERN.search(text)
-        if gender_match:
-            raw = gender_match.group(1).upper()
-            gender = {"M": "Male", "F": "Female"}.get(raw, raw.title())
 
     data = AadhaarCardData(
         aadhaar_number=aadhaar_number,

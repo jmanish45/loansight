@@ -14,3 +14,5 @@ langchain-groq>=0.2.0
 groq>=0.11.0
 pytesseract>=0.3.10
 numpy>=1.26.0
+rapidocr-onnxruntime==1.2.3
+opencv-python-headless>=4.8.0

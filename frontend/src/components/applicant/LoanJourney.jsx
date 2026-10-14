@@ -1,11 +1,6 @@
 import { Check, X } from 'lucide-react';
-
-const STATE_LABEL = {
-  complete: { text: 'Completed', className: 'text-emerald-600' },
-  current: { text: 'In Progress', className: 'text-emerald-600' },
-  blocked: { text: 'Action Needed', className: 'text-red-600' },
-  pending: { text: 'Pending', className: 'text-slate-400' },
-};
+import { useLanguage } from '../../context/LanguageContext';
+import { translateJourneyStep } from '../../constants/translations';
 
 function Marker({ state }) {
   if (state === 'complete') {
@@ -38,22 +33,32 @@ export default function LoanJourney({
   title = 'Your Loan Journey',
   subtitle = '',
 }) {
+  const { t } = useLanguage();
   const clamped = Math.max(0, Math.min(100, Number(percent) || 0));
+
+  const stateLabels = {
+    complete: { text: t('completed_percent', 'Completed'), className: 'text-emerald-600' },
+    current: { text: t('processing_status', 'In Progress'), className: 'text-emerald-600' },
+    blocked: { text: t('action_required', 'Action Needed'), className: 'text-red-600' },
+    pending: { text: t('status_documents_pending', 'Pending'), className: 'text-slate-400' },
+  };
+
+  const displayTitle = title === 'Your Loan Journey' ? t('your_loan_journey', 'Your Loan Journey') : title;
 
   return (
     <section className="bg-white border border-slate-200 rounded-xl p-5 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)]">
-      <h2 className="text-[15px] font-semibold text-slate-900">{title}</h2>
+      <h2 className="text-[15px] font-semibold text-slate-900">{displayTitle}</h2>
       {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
 
       {steps.length === 0 ? (
-        <p className="text-sm text-slate-400 text-center py-8">No application started yet.</p>
+        <p className="text-sm text-slate-400 text-center py-8">{t('no_applications_yet', 'No application started yet.')}</p>
       ) : (
         <>
           <div className="mt-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-slate-600">Overall Progress</span>
+              <span className="text-xs text-slate-600">{t('overall_progress', 'Overall Progress')}</span>
               <span className="text-xs font-medium text-slate-900 tabular-nums">
-                {clamped}% Completed
+                {clamped}% {t('completed_percent', 'Completed')}
               </span>
             </div>
             <div
@@ -73,8 +78,9 @@ export default function LoanJourney({
 
           <ol className="mt-5">
             {steps.map((step, index) => {
-              const meta = STATE_LABEL[step.state] || STATE_LABEL.pending;
+              const meta = stateLabels[step.state] || stateLabels.pending;
               const isLast = index === steps.length - 1;
+              const stepLabel = translateJourneyStep(step.key, t) || step.label;
               return (
                 <li key={step.key} className="relative flex gap-3">
                   <div className="relative flex flex-col items-center shrink-0 w-5">
@@ -96,7 +102,7 @@ export default function LoanJourney({
                           step.state === 'pending' ? 'text-slate-400' : 'text-slate-900'
                         }`}
                       >
-                        {step.label}
+                        {stepLabel}
                       </p>
                       {step.hint && <p className="text-[11px] text-slate-400 mt-0.5">{step.hint}</p>}
                     </div>

@@ -132,10 +132,19 @@ export function docReadiness(application) {
   const rejected = documents.filter((d) => d?.status === 'rejected').length;
   const pending = documents.filter((d) => d?.status === 'pending_review').length;
 
-  const usableTypes = new Set(
-    documents.filter((d) => d && d.status !== 'rejected').map((d) => d.documentType)
-  );
-  const missing = requirements.filter((r) => !usableTypes.has(r.type));
+  const usableDocs = documents.filter((d) => d && d.status !== 'rejected' && d.status !== 'superseded');
+  const missing = requirements.filter((req) => {
+    const rt = (req?.type || '').toLowerCase().replace(/[-_ ]/g, '');
+    return !usableDocs.some((d) => {
+      const dt = (d?.documentType || '').toLowerCase().replace(/[-_ ]/g, '');
+      const pred = (d?.aiProcessing?.predictedType || '').toLowerCase().replace(/[-_ ]/g, '');
+      return (
+        dt === rt ||
+        pred === rt ||
+        (rt.includes('form16') && (dt.includes('form16') || pred.includes('form16') || dt.includes('itr')))
+      );
+    });
+  });
 
   const required = requirements.length;
   const satisfied = required - missing.length;
@@ -143,7 +152,7 @@ export function docReadiness(application) {
 
   return {
     required,
-    uploadedCount: documents.length,
+    uploadedCount: usableDocs.length,
     approved,
     rejected,
     pending,

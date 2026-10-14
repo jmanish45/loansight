@@ -21,8 +21,16 @@ app.use(helmet({
 }));
 
 // CORS
+const getCorsOrigin = () => {
+  if (!config.corsOrigin || config.corsOrigin === '*') return true;
+  if (config.corsOrigin.includes(',')) {
+    return config.corsOrigin.split(',').map((s) => s.trim());
+  }
+  return config.corsOrigin;
+};
+
 app.use(cors({
-  origin: config.corsOrigin,
+  origin: getCorsOrigin(),
   credentials: true,
 }));
 
@@ -37,6 +45,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Routes
+app.get('/', (req, res) => {
+  res.json({ name: 'LoanSight API', status: 'online', version: '1.0.0' });
+});
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/applications', applicationRoutes);

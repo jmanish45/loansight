@@ -39,7 +39,7 @@ const documentSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending_review', 'approved', 'rejected'],
+      enum: ['pending_review', 'approved', 'rejected', 'superseded'],
       default: 'pending_review',
     },
     reviewComment: {
@@ -76,7 +76,20 @@ const documentSchema = new mongoose.Schema(
       },
       predictedType: {
         type: String,
-        enum: ['PAN', 'AADHAAR', 'SALARY_SLIP', 'PAYMENT_SLIP', 'BANK_STATEMENT', 'FORM_16', 'OTHER', 'UNKNOWN'],
+        enum: [
+          'PAN',
+          'AADHAAR',
+          'SALARY_SLIP',
+          'PAYMENT_SLIP',
+          'BANK_STATEMENT',
+          'FORM_16',
+          'FORM16',
+          'PROPERTY_DOCUMENT',
+          'SUPPORTING_DOC',
+          'IDENTITY_RECORD',
+          'OTHER',
+          'UNKNOWN',
+        ],
         default: null,
       },
       confidence: {

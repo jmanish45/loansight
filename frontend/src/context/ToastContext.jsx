@@ -6,27 +6,27 @@ const ToastContext = createContext(null);
 const VARIANTS = {
   success: {
     Icon: CheckCircle2,
-    iconClass: 'text-success-600',
-    iconBg: 'bg-success-100',
-    accent: 'border-l-success-500',
+    iconClass: 'text-emerald-600',
+    iconBg: 'bg-emerald-50 border border-emerald-200',
+    accent: 'border-l-emerald-600',
   },
   error: {
     Icon: XCircle,
-    iconClass: 'text-error-600',
-    iconBg: 'bg-error-100',
-    accent: 'border-l-error-500',
+    iconClass: 'text-red-600',
+    iconBg: 'bg-red-50 border border-red-200',
+    accent: 'border-l-red-600',
   },
   warning: {
     Icon: AlertTriangle,
-    iconClass: 'text-warning-600',
-    iconBg: 'bg-warning-100',
-    accent: 'border-l-warning-500',
+    iconClass: 'text-amber-600',
+    iconBg: 'bg-amber-50 border border-amber-200',
+    accent: 'border-l-amber-600',
   },
   info: {
     Icon: Info,
-    iconClass: 'text-accent-600',
-    iconBg: 'bg-accent-100',
-    accent: 'border-l-accent-500',
+    iconClass: 'text-sky-600',
+    iconBg: 'bg-sky-50 border border-sky-200',
+    accent: 'border-l-sky-600',
   },
 };
 
@@ -86,7 +86,7 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={toast}>
       {children}
       <div
-        className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2.5 w-[calc(100vw-2rem)] max-w-sm pointer-events-none"
+        className="fixed bottom-4 right-4 z-[130] flex flex-col gap-2.5 w-[calc(100vw-2rem)] max-w-sm pointer-events-none"
         aria-live="polite"
         aria-atomic="false"
       >
@@ -98,18 +98,19 @@ export function ToastProvider({ children }) {
               role={t.variant === 'error' ? 'alert' : 'status'}
               className={`
                 pointer-events-auto flex items-start gap-3 p-3.5 pr-2.5
-                bg-cream-50 border border-cream-300/70 border-l-4 ${accent}
-                rounded-xl shadow-elevated animate-slide-up
+                bg-white text-slate-900 border border-slate-300 border-l-4 ${accent}
+                rounded-md shadow-2xl animate-slide-up opacity-100 z-[140]
               `}
+              style={{ backgroundColor: '#ffffff', opacity: 1, color: '#0f172a' }}
             >
-              <span className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${iconBg}`}>
+              <span className={`shrink-0 w-8 h-8 rounded-md flex items-center justify-center ${iconBg}`}>
                 <Icon className={`w-4 h-4 ${iconClass}`} />
               </span>
               <div className="flex-1 min-w-0 pt-0.5">
                 {t.title && (
-                  <p className="text-sm font-semibold text-charcoal-900 leading-snug">{t.title}</p>
+                  <p className="text-xs font-bold text-slate-900 leading-snug">{t.title}</p>
                 )}
-                <p className={`text-sm text-charcoal-600 leading-snug ${t.title ? 'mt-0.5' : ''}`}>
+                <p className={`text-xs font-semibold text-slate-800 leading-snug ${t.title ? 'mt-0.5' : ''}`}>
                   {t.message}
                 </p>
               </div>
@@ -117,7 +118,7 @@ export function ToastProvider({ children }) {
                 type="button"
                 onClick={() => dismiss(t.id)}
                 aria-label="Dismiss notification"
-                className="shrink-0 p-1.5 rounded-md text-charcoal-400 hover:text-charcoal-700 hover:bg-cream-200 transition-colors cursor-pointer"
+                className="shrink-0 p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>

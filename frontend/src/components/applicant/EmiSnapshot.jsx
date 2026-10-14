@@ -1,23 +1,26 @@
 import { formatINR, formatINRCompact, formatMonths } from '../../lib/loanMath';
+import { useLanguage } from '../../context/LanguageContext';
+import { translateLoanType } from '../../constants/translations';
 
 const R = 68;
 const C = 84;
 const CIRC = 2 * Math.PI * R;
 
 export default function EmiSnapshot({ application = null, estimate = null }) {
+  const { t } = useLanguage();
   const title = (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
-        <h2 className="text-[15px] font-semibold text-slate-900">EMI Snapshot</h2>
+        <h2 className="text-[15px] font-semibold text-slate-900">{t('emi_snapshot', 'EMI Snapshot')}</h2>
         {application && (
           <p className="text-xs text-slate-400 mt-0.5 truncate">
-            <span className="capitalize">{application.loanType}</span> Loan
+            {translateLoanType(application.loanType, t)}
             {application.bankName ? ` · ${application.bankName}` : ''}
           </p>
         )}
       </div>
       <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 shrink-0">
-        INDICATIVE
+        {t('indicative_badge', 'INDICATIVE')}
       </span>
     </div>
   );
@@ -30,8 +33,8 @@ export default function EmiSnapshot({ application = null, estimate = null }) {
         {title}
         <p className="text-sm text-slate-400 text-center py-10">
           {application
-            ? 'No published rate available for this partner yet.'
-            : 'An EMI estimate appears once you have an active application.'}
+            ? t('rate_unavailable', 'No published rate available for this partner yet.')
+            : t('emi_estimate_empty', 'An EMI estimate appears once you have an active application.')}
         </p>
       </section>
     );
@@ -80,7 +83,7 @@ export default function EmiSnapshot({ application = null, estimate = null }) {
               <p className="text-xl font-semibold tabular-nums text-slate-900">
                 {formatINRCompact(estimate.emi)}
               </p>
-              <p className="text-[10px] uppercase tracking-wider text-slate-400 mt-0.5">Monthly EMI</p>
+              <p className="text-[10px] uppercase tracking-wider text-slate-400 mt-0.5">{t('monthly_emi', 'Monthly EMI')}</p>
             </div>
           </div>
         </div>
@@ -89,7 +92,7 @@ export default function EmiSnapshot({ application = null, estimate = null }) {
           <div className="flex items-center justify-between gap-3">
             <span className="flex items-center gap-2 text-sm text-slate-600">
               <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-              Principal
+              {t('principal_label', 'Principal')}
             </span>
             <span className="text-sm font-medium text-slate-900 tabular-nums">
               {formatINRCompact(estimate.principal)}
@@ -100,7 +103,7 @@ export default function EmiSnapshot({ application = null, estimate = null }) {
           <div className="flex items-center justify-between gap-3">
             <span className="flex items-center gap-2 text-sm text-slate-600">
               <span className="w-2 h-2 rounded-full bg-navy-900 shrink-0" />
-              Total Interest
+              {t('total_interest', 'Total Interest')}
             </span>
             <span className="text-sm font-medium text-slate-900 tabular-nums">
               {formatINRCompact(estimate.totalInterest)}
@@ -109,7 +112,7 @@ export default function EmiSnapshot({ application = null, estimate = null }) {
           </div>
 
           <div className="flex items-center justify-between gap-3 border-t border-slate-200 pt-3">
-            <span className="text-sm text-slate-600">Total Payable</span>
+            <span className="text-sm text-slate-600">{t('total_payable', 'Total Payable')}</span>
             <span className="text-sm font-semibold text-slate-900 tabular-nums">
               {formatINR(estimate.totalPayable)}
             </span>

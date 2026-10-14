@@ -97,8 +97,8 @@ def run_deterministic_validation(
     pan_data = get_first("PAN")
     aadhaar_data = get_first("AADHAAR")
     salary_slip = get_first("SALARY_SLIP") or get_first("PAYMENT_SLIP")
-    bank_stmt = get_first("BANK_STATEMENT")
-    form16 = get_first("FORM_16")
+    bank_stmt = get_first("BANK_STATEMENT") or get_first("BANK") or get_first("STATEMENT")
+    form16 = get_first("FORM_16") or get_first("FORM16")
 
     declared_income = parse_numeric(applicant_declared.get("declaredMonthlyIncome") or applicant_declared.get("declared_monthly_income"))
     declared_name = applicant_declared.get("name") or applicant_declared.get("applicant_name")
@@ -109,7 +109,7 @@ def run_deterministic_validation(
     names: List[Tuple[str, str]] = []
     registered_name = declared_name or "Applicant"
     if declared_name:
-        names.append(("Declared Name", declared_name))
+        names.append(("Applicant Account", declared_name))
 
     pan_name = (pan_data and pan_data.get("name")) or registered_name
     names.append(("PAN Card", pan_name))
@@ -119,8 +119,8 @@ def run_deterministic_validation(
 
     if salary_slip and salary_slip.get("employee_name"):
         names.append(("Salary Slip", salary_slip["employee_name"]))
-    if bank_stmt and bank_stmt.get("account_holder"):
-        names.append(("Bank Statement", bank_stmt["account_holder"]))
+    if bank_stmt and (bank_stmt.get("account_holder") or bank_stmt.get("account_holder_name") or bank_stmt.get("name")):
+        names.append(("Bank Statement", bank_stmt.get("account_holder") or bank_stmt.get("account_holder_name") or bank_stmt.get("name")))
     if form16 and form16.get("employee_name"):
         names.append(("Form 16", form16["employee_name"]))
 
@@ -140,11 +140,10 @@ def run_deterministic_validation(
         name_evidence["lowest_match_score"] = f"{int(lowest_sim * 100)}%"
 
         # Build structured sourceA/sourceB for name comparison
-        # sourceA = identity docs (PAN, Aadhaar), sourceB = financial docs (Salary, Bank)
         identity_values = []
         financial_values = []
         for src, name in names:
-            if src in ("PAN Card", "Aadhaar Card", "Declared Name"):
+            if src in ("Applicant Account", "PAN Card", "Aadhaar Card", "Declared Name"):
                 identity_values.append(f"{src}: {name}")
             else:
                 financial_values.append(f"{src}: {name}")
@@ -253,20 +252,29 @@ def run_deterministic_validation(
         pan_numbers.append(("PAN Card", pan_data["pan_number"]))
     if salary_slip and salary_slip.get("pan_number"):
         pan_numbers.append(("Salary Slip", salary_slip["pan_number"]))
-    if form16 and form16.get("pan_employee"):
-        pan_numbers.append(("Form 16", form16["pan_employee"]))
+    if form16 and (form16.get("pan_employee") or form16.get("employee_pan")):
+        pan_numbers.append(("Form 16", form16.get("pan_employee") or form16.get("employee_pan")))
 
     if len(pan_numbers) >= 2:
         pan_evidence = {src: val for src, val in pan_numbers}
-        norm_pans = [normalize_pan_str(val) for _, val in pan_numbers if normalize_pan_str(val)]
+        clean_pans = {src: re.sub(r"[^A-Z0-9]", "", val.upper()) for src, val in pan_numbers}
 
-        pan_src_a = EvidenceSide(label=pan_numbers[0][0], values=[f"PAN: {pan_numbers[0][1]}", f"Format: {'Valid' if normalize_pan_str(pan_numbers[0][1]) else 'Invalid'}"])
+        pan_src_a = EvidenceSide(
+            label=pan_numbers[0][0],
+            values=[
+                f"PAN: {pan_numbers[0][1]}",
+                f"Format: {'Valid' if normalize_pan_str(pan_numbers[0][1]) else 'Invalid'}"
+            ]
+        )
         pan_src_b_values = []
         for src, val in pan_numbers[1:]:
+            is_match = clean_pans[src] == clean_pans[pan_numbers[0][0]]
             pan_src_b_values.append(f"{src}: {val}")
+            pan_src_b_values.append(f"Status: {'Matched' if is_match else 'Mismatch'}")
         pan_src_b = EvidenceSide(label="Cross-Reference", values=pan_src_b_values)
 
-        if len(set(norm_pans)) == 1:
+        unique_clean_pans = set(clean_pans.values())
+        if len(unique_clean_pans) == 1:
             checks.append(VerificationCheck(
                 type="PAN_CONSISTENCY",
                 status=CheckStatus.PASSED,
@@ -277,23 +285,27 @@ def run_deterministic_validation(
                 sourceB=pan_src_b,
             ))
         else:
+            mismatch_pairs = []
+            base_src, base_val = pan_numbers[0]
+            for src, val in pan_numbers[1:]:
+                if clean_pans[src] != clean_pans[base_src]:
+                    mismatch_pairs.append(f"{base_src} ('{base_val}') differs from {src} ('{val}')")
             checks.append(VerificationCheck(
                 type="PAN_CONSISTENCY",
                 status=CheckStatus.FLAGGED,
                 severity=SeverityLevel.HIGH,
-                message="PAN number mismatch detected across documents.",
+                message=f"PAN number mismatch detected across documents: {'; '.join(mismatch_pairs)}.",
                 evidence=pan_evidence,
                 sourceA=pan_src_a,
                 sourceB=pan_src_b,
             ))
 
     # -------------------------------------------------------------------------
-    # 3. Aadhaar Verification
-    # -------------------------------------------------------------------------
     if aadhaar_data:
         aadhaar_num = aadhaar_data.get("aadhaar_number", "")
         aadhaar_formatted = aadhaar_num if aadhaar_num else "Not extracted"
-        aadhaar_valid = bool(aadhaar_num and len(re.sub(r"[^\d]", "", aadhaar_num)) == 12)
+        clean_digits = re.sub(r"[^\d]", "", aadhaar_num)
+        aadhaar_valid = bool(aadhaar_num and (len(clean_digits) == 12 or (len(clean_digits) == 4 and "X" in aadhaar_num.upper())))
 
         aadhaar_src_a = EvidenceSide(
             label="Aadhaar Card",
@@ -314,14 +326,13 @@ def run_deterministic_validation(
             sourceB=aadhaar_src_b,
         ))
 
-    # -------------------------------------------------------------------------
-    # 4. Employment Checks: Employer Name Consistency
-    # -------------------------------------------------------------------------
     employers: List[Tuple[str, str]] = []
-    if salary_slip and salary_slip.get("employer"):
-        employers.append(("Salary Slip", salary_slip["employer"]))
+    if salary_slip and (salary_slip.get("employer") or salary_slip.get("employer_name")):
+        employers.append(("Salary Slip", salary_slip.get("employer") or salary_slip.get("employer_name")))
     if form16 and form16.get("employer_name"):
         employers.append(("Form 16", form16["employer_name"]))
+    if bank_stmt and bank_stmt.get("employer_name"):
+        employers.append(("Bank Statement", bank_stmt["employer_name"]))
 
     if len(employers) >= 2:
         emp_evidence = {src: val for src, val in employers}

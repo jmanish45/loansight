@@ -56,6 +56,7 @@ class BankStatementData(BaseModel):
 
     statement_period_from: Optional[str] = Field(default=None, description="Statement start date")
     statement_period_to: Optional[str] = Field(default=None, description="Statement end date")
+    employer_name: Optional[str] = Field(default=None, description="Employer name detected from salary credits or transaction narrations")
 
     # Summary
     opening_balance: Optional[float] = Field(default=None, description="Opening balance")

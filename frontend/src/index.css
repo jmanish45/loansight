@@ -1,105 +1,127 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
-/* ─── Design Tokens ─── */
+/* ─── LoanSight 2026 Precision FinTech Design Tokens ─── */
 @theme {
-  --color-cream-50: #FEFDFB;
-  --color-cream-100: #FAF9F5;
-  --color-cream-200: #F5F3EF;
-  --color-cream-300: #EDEBE5;
-  --color-cream-400: #E0DDD5;
+  /* Brand Identity (Obsidian Navy & Verified Emerald) */
+  --color-navy-950: #060E1A;
+  --color-navy-900: #0B1324;
+  --color-navy-800: #111C33;
+  --color-navy-700: #1C2B4A;
+  --color-navy-600: #2C3E63;
+  --color-navy-500: #3B5280;
+  --color-navy-400: #5773A8;
+  --color-navy-300: #7E9ACF;
+  --color-navy-200: #B2C5EB;
+  --color-navy-100: #DCE5F7;
+  --color-navy-50:  #F0F4FA;
 
-  --color-charcoal-950: #0F0F0F;
-  --color-charcoal-900: #1A1A1A;
-  --color-charcoal-800: #2D2D2D;
-  --color-charcoal-700: #404040;
-  --color-charcoal-600: #525252;
-  --color-charcoal-500: #6B6B6B;
-  --color-charcoal-400: #8A8A8A;
-  --color-charcoal-300: #A3A3A3;
-  --color-charcoal-200: #D4D4D4;
+  --color-brand-navy-950: #060E1A;
+  --color-brand-navy-900: #0B1324;
+  --color-brand-navy-800: #111C33;
+  --color-brand-navy-700: #1C2B4A;
+  --color-brand-navy-600: #2C3E63;
 
-  --color-accent-700: #3A5670;
-  --color-accent-600: #4A6D8C;
-  --color-accent-500: #5A8BAD;
-  --color-accent-400: #7BA5C4;
-  --color-accent-200: #C4D9E8;
-  --color-accent-100: #E8F0F7;
-  --color-accent-50: #F4F8FC;
+  /* Primary Canvas & Surface Scale */
+  --color-canvas: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #F1F5F9;
+  --color-surface-active: #E2E8F0;
+  --color-border-subtle: #E2E8F0;
+  --color-border-strong: #CBD5E1;
 
-  --color-success-700: #2F6149;
-  --color-success-600: #3D7A5F;
-  --color-success-500: #48916F;
-  --color-success-200: #C2E3D2;
-  --color-success-100: #E6F4ED;
-  --color-success-50: #F0FAF5;
-
-  --color-warning-700: #7C6224;
-  --color-warning-600: #9A7B2D;
-  --color-warning-500: #B8922F;
-  --color-warning-200: #F5E7B8;
-  --color-warning-100: #FEF9E7;
-  --color-warning-50: #FFFDF0;
-
-  --color-error-700: #933A3A;
-  --color-error-600: #B44A4A;
-  --color-error-500: #CC5555;
-  --color-error-200: #F7C9C9;
-  --color-error-100: #FDE8E8;
-  --color-error-50: #FFF1F1;
-
-  /* AI / Intelligence accent (purple) */
-  --color-ai-700: #6D28D9;
-  --color-ai-600: #7C3AED;
-  --color-ai-500: #8B5CF6;
-  --color-ai-400: #A78BFA;
-  --color-ai-200: #DDD6FE;
-  --color-ai-100: #EDE9FE;
-  --color-ai-50: #F5F3FF;
-
-  /* ─── Premium FinTech palette (ADDITIVE — nothing above is replaced) ─── */
-
-  /* Navy: brand, sidebar, dark hero, selected nav background.
-     Custom family — not part of Tailwind's default palette. */
-  --color-navy-950: #061426;
-  --color-navy-900: #0A192F;
-  --color-navy-800: #102A43;
-  --color-navy-700: #163A5F;
-
-  /* The shades below match Tailwind's defaults and are pinned deliberately so
-     the design stays locked to the spec rather than to future Tailwind changes.
-     Only spec-named shades are pinned; Tailwind still supplies the rest. */
-
-  /* Emerald: primary CTA, success, passed checks, progress, positive figures */
-  --color-emerald-50: #ECFDF5;
-  --color-emerald-100: #D1FAE5;
-  --color-emerald-500: #10B981;
-  --color-emerald-600: #059669;
-  --color-emerald-700: #047857;
-
-  /* Red: failed verification, rejected docs, discrepancies, destructive */
-  --color-red-50: #FEF2F2;
-  --color-red-100: #FEE2E2;
-  --color-red-500: #EF4444;
-  --color-red-600: #DC2626;
-  --color-red-700: #B91C1C;
-
-  /* Amber: warning, pending, missing info, manual attention */
-  --color-amber-50: #FFFBEB;
-  --color-amber-100: #FEF3C7;
-  --color-amber-500: #F59E0B;
-  --color-amber-600: #D97706;
-
-  /* Slate: page background, surfaces, borders, text */
+  /* Neutral Slate Scale */
   --color-slate-50: #F8FAFC;
   --color-slate-100: #F1F5F9;
   --color-slate-200: #E2E8F0;
   --color-slate-300: #CBD5E1;
   --color-slate-400: #94A3B8;
+  --color-slate-500: #64748B;
   --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1E293B;
   --color-slate-900: #0F172A;
+  --color-slate-950: #020617;
 
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Semantic Underwriting Colors */
+  --color-emerald-50: #ECFDF5;
+  --color-emerald-100: #D1FAE5;
+  --color-emerald-200: #A7F3D0;
+  --color-emerald-500: #10B981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+
+  --color-red-50: #FEF2F2;
+  --color-red-100: #FEE2E2;
+  --color-red-200: #FECACA;
+  --color-red-500: #EF4444;
+  --color-red-600: #DC2626;
+  --color-red-700: #B91C1C;
+
+  --color-amber-50: #FFFBEB;
+  --color-amber-100: #FEF3C7;
+  --color-amber-200: #FDE68A;
+  --color-amber-500: #F59E0B;
+  --color-amber-600: #D97706;
+  --color-amber-700: #B45309;
+
+  --color-sky-50: #F0F9FF;
+  --color-sky-100: #E0F2FE;
+  --color-sky-200: #BAE6FD;
+  --color-sky-500: #0EA5E9;
+  --color-sky-600: #0284C7;
+  --color-sky-700: #0369A1;
+
+  /* Typography */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Controlled Restrained Radius Scale */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+
+  /* Control Heights */
+  --height-sm: 32px;
+  --height-md: 38px;
+  --height-lg: 44px;
+}
+
+/* Explicit Navy Utilities to guarantee compilation in all Tailwind environments */
+@layer utilities {
+  .bg-navy-950 { background-color: #060E1A !important; }
+  .bg-navy-900 { background-color: #0B1324 !important; }
+  .bg-navy-800 { background-color: #111C33 !important; }
+  .bg-navy-700 { background-color: #1C2B4A !important; }
+  .bg-navy-600 { background-color: #2C3E63 !important; }
+  .bg-navy-500 { background-color: #3B5280 !important; }
+
+  .text-navy-950 { color: #060E1A !important; }
+  .text-navy-900 { color: #0B1324 !important; }
+  .text-navy-800 { color: #111C33 !important; }
+  .text-navy-700 { color: #1C2B4A !important; }
+
+  .border-navy-950 { border-color: #060E1A !important; }
+  .border-navy-900 { border-color: #0B1324 !important; }
+  .border-navy-800 { border-color: #111C33 !important; }
+  .border-navy-700 { border-color: #1C2B4A !important; }
+
+  .animate-tab-slide {
+    animation: tabSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}
+
+@keyframes tabSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* ─── Base Styles ─── */
@@ -119,157 +141,108 @@
 
   body {
     font-family: var(--font-sans);
-    background-color: var(--color-cream-100);
-    color: var(--color-charcoal-900);
-    line-height: 1.6;
+    background-color: var(--color-slate-50);
+    color: var(--color-slate-900);
+    line-height: 1.5;
     margin: 0;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    line-height: 1.2;
+    line-height: 1.25;
     font-weight: 600;
     letter-spacing: -0.01em;
+    color: var(--color-slate-900);
   }
 
-  h1 { font-size: 3rem; }
-  h2 { font-size: 2.25rem; }
-  h3 { font-size: 1.5rem; }
-  h4 { font-size: 1.25rem; }
+  h1 { font-size: 2.25rem; font-weight: 700; }
+  h2 { font-size: 1.75rem; font-weight: 600; }
+  h3 { font-size: 1.25rem; font-weight: 600; }
+  h4 { font-size: 1rem; font-weight: 600; }
 
   @media (max-width: 768px) {
-    h1 { font-size: 2rem; }
-    h2 { font-size: 1.75rem; }
-    h3 { font-size: 1.25rem; }
+    h1 { font-size: 1.75rem; }
+    h2 { font-size: 1.35rem; }
+    h3 { font-size: 1.15rem; }
   }
 
-  a {
-    color: inherit;
-    text-decoration: none;
-  }
-
-  ::selection {
-    background-color: var(--color-accent-100);
-    color: var(--color-charcoal-900);
-  }
-
+  /* Accessible Focus Rings */
   :focus-visible {
-    outline: 2px solid var(--color-accent-500);
+    outline: 2px solid var(--color-sky-600);
     outline-offset: 2px;
   }
 }
 
-/* ─── Utility Classes ─── */
+/* ─── Financial & Utility Classes ─── */
 @layer utilities {
-  .glass {
-    background: rgba(255, 255, 255, 0.72);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
+  .font-mono-num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
   }
 
-  .glass-subtle {
-    background: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.35);
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 
-  .shadow-soft {
-    box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.04),
-      0 4px 12px rgba(0, 0, 0, 0.03);
+  /* High contrast border helper */
+  .border-thin {
+    border: 1px solid var(--color-slate-200);
   }
 
-  .shadow-elevated {
-    box-shadow:
-      0 1px 3px rgba(0, 0, 0, 0.04),
-      0 6px 24px rgba(0, 0, 0, 0.06);
+  .border-thin-strong {
+    border: 1px solid var(--color-slate-300);
   }
 
-  .shadow-float {
-    box-shadow:
-      0 2px 4px rgba(0, 0, 0, 0.03),
-      0 12px 40px rgba(0, 0, 0, 0.08);
+  .shadow-subtle {
+    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
   }
 
-  .text-balance {
-    text-wrap: balance;
+  .shadow-panel {
+    box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
   }
 
-  .animate-fade-in {
-    animation: fadeIn 0.5s ease-out both;
-  }
-
-  .animate-slide-up {
-    animation: slideUp 0.5s ease-out both;
-  }
-
-  .animate-scale-in {
-    animation: scaleIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
-  /* Barely-perceptible 32px grid texture for the navy dashboard hero.
-     Kept at 0.03 alpha so it reads as paper texture, not decoration. */
   .dash-grid-pattern {
-    background-image:
-      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 32px 32px;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    background-size: 16px 16px;
   }
 }
 
-/* ─── Animations ─── */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+/* Reduced Motion Compliance */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.96) translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes aiPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-/* ─── AI Processing Utilities ─── */
+/* Touch Target and Accessibility Helpers */
 @layer utilities {
-  .animate-shimmer {
-    background: linear-gradient(
-      90deg,
-      var(--color-ai-50) 25%,
-      var(--color-ai-100) 50%,
-      var(--color-ai-50) 75%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 2s ease-in-out infinite;
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
   }
 
-  .animate-ai-pulse {
-    animation: aiPulse 1.5s ease-in-out infinite;
+  .focus-ring:focus {
+    outline: none;
+  }
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--color-emerald-600);
+    outline-offset: 2px;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
   }
 }
+

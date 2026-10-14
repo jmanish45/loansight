@@ -1,4 +1,5 @@
-import { Info, TrendingUp } from 'lucide-react';
+import { useState } from 'react';
+import { Info, TrendingUp, ChevronUp, ChevronDown, Building2 } from 'lucide-react';
 import BankLogo from '../common/BankLogo';
 import {
   parseRate,
@@ -12,17 +13,17 @@ import {
 const CARD = 'bg-white border border-slate-200 rounded-xl shadow-[0_1px_2px_0_rgba(15,23,42,0.04)]';
 
 const BAND_COPY = {
-  healthy: { label: 'Comfortable', className: 'text-emerald-600' },
-  moderate: { label: 'Moderate', className: 'text-amber-600' },
-  stretched: { label: 'Stretched', className: 'text-red-600' },
+  healthy: { label: 'Comfortable burden', className: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+  moderate: { label: 'Moderate burden', className: 'text-amber-700 bg-amber-50 border-amber-200' },
+  stretched: { label: 'High repayment burden', className: 'text-red-700 bg-red-50 border-red-200' },
 };
 
 function Row({ label, value, mono = false }) {
   return (
-    <div className="flex items-start justify-between gap-3 py-2.5 border-b border-slate-100 last:border-0">
-      <span className="text-xs text-slate-400">{label}</span>
+    <div className="flex items-start justify-between gap-3 py-2 border-b border-slate-100 last:border-0">
+      <span className="text-xs text-slate-500">{label}</span>
       <span
-        className={`text-sm font-medium text-slate-900 text-right min-w-0 ${mono ? 'tabular-nums' : ''}`}
+        className={`text-xs font-medium text-slate-900 text-right min-w-0 ${mono ? 'tabular-nums font-mono' : ''}`}
       >
         {value}
       </span>
@@ -31,9 +32,8 @@ function Row({ label, value, mono = false }) {
 }
 
 /**
- * Sticky rail showing what the applicant has chosen so far, plus an indicative
- * EMI derived from the selected bank's published starting rate. No estimate is
- * shown unless a real rate, amount and tenure are all available.
+ * Dynamic summary rail showing chosen bank, loan parameters, and canonical EMI calculations.
+ * Supports sticky positioning on desktop and a collapsible summary bar on mobile.
  */
 export default function ApplicationSummaryRail({
   bank = null,
@@ -44,6 +44,8 @@ export default function ApplicationSummaryRail({
   documentsUploaded = 0,
   documentsRequired = 0,
 }) {
+  const [mobileExpanded, setMobileExpanded] = useState(false);
+
   const amount = Number(requestedAmount);
   const tenure = Number(tenureMonths);
   const income = Number(declaredMonthlyIncome);
@@ -54,34 +56,42 @@ export default function ApplicationSummaryRail({
   const rateSource = bankRate !== null && bank ? `${bank.name} starting rate` : 'published range';
 
   const breakdown =
-    ratePct !== null && Number.isFinite(amount) && Number.isFinite(tenure)
+    ratePct !== null && Number.isFinite(amount) && amount > 0 && Number.isFinite(tenure) && tenure > 0
       ? emiBreakdown(amount, ratePct, tenure)
       : null;
 
-  const ratio = breakdown ? affordabilityRatio(breakdown.emi, income) : null;
+  const ratio = breakdown && Number.isFinite(income) && income > 0 ? affordabilityRatio(breakdown.emi, income) : null;
   const band = affordabilityBand(ratio);
   const bandCopy = band ? BAND_COPY[band] : null;
 
-  return (
-    <div className="space-y-5">
+  const SummaryContent = () => (
+    <div className="space-y-4">
+      {/* Overview Block */}
       <section className={`${CARD} p-5`}>
-        <h2 className="text-[15px] font-semibold text-slate-900">Application summary</h2>
-        <p className="text-xs text-slate-400 mt-0.5">Updates as you fill the form</p>
+        <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-100">
+          <div>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">Application Summary</h2>
+            <p className="text-[11px] text-slate-400">Underwriting parameters</p>
+          </div>
+          <span className="text-[11px] font-mono font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+            {documentsRequired > 0 ? `${documentsUploaded}/${documentsRequired} Docs` : 'Draft'}
+          </span>
+        </div>
 
         {bank && (
-          <div className="flex items-center gap-3 mt-4 p-3 rounded-lg bg-slate-50 border border-slate-200">
+          <div className="flex items-center gap-3 mt-3.5 p-2.5 rounded-lg bg-slate-50 border border-slate-200">
             <BankLogo bank={bank} size="md" />
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-900 truncate">{bank.name}</p>
-              <p className="text-[11px] text-slate-400 truncate">{bank.tagline}</p>
+              <p className="text-xs font-semibold text-slate-900 truncate">{bank.name}</p>
+              <p className="text-[10px] text-slate-400 truncate">{bank.tagline}</p>
             </div>
           </div>
         )}
 
-        <div className="mt-3">
-          <Row label="Loan type" value={loanTypeDetail?.label || 'Not selected'} />
+        <div className="mt-3 divide-y divide-slate-100">
+          <Row label="Loan Type" value={loanTypeDetail?.label || 'Not selected'} />
           <Row
-            label="Amount"
+            label="Requested Amount"
             value={Number.isFinite(amount) && amount > 0 ? formatINR(amount) : '—'}
             mono
           />
@@ -91,69 +101,108 @@ export default function ApplicationSummaryRail({
             mono
           />
           <Row
-            label="Declared income"
+            label="Declared Income"
             value={Number.isFinite(income) && income > 0 ? `${formatINR(income)}/mo` : '—'}
             mono
           />
-          {documentsRequired > 0 && (
-            <Row
-              label="Documents"
-              value={`${documentsUploaded} of ${documentsRequired} uploaded`}
-              mono
-            />
-          )}
         </div>
       </section>
 
+      {/* EMI Calculation Block */}
       <section className={`${CARD} p-5`}>
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-[15px] font-semibold text-slate-900">Indicative EMI</h2>
-          <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 shrink-0">
-            Estimate
+        <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">Indicative EMI</h2>
+          <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+            Computed
           </span>
         </div>
 
         {!breakdown ? (
-          <p className="text-sm text-slate-400 mt-3">
+          <p className="text-xs text-slate-400 mt-3 leading-relaxed">
             {ratePct === null
-              ? 'No published rate available for this partner yet.'
-              : 'Enter an amount and tenure to see your estimated monthly payment.'}
+              ? 'Select a loan type to view rate breakdown.'
+              : 'Enter loan amount and tenure to calculate your monthly EMI.'}
           </p>
         ) : (
-          <>
-            <p className="text-[28px] font-semibold text-slate-900 tabular-nums leading-none mt-3">
-              {formatINR(breakdown.emi)}
-            </p>
-            <p className="text-xs text-slate-400 mt-1">per month</p>
+          <div className="mt-3 space-y-3">
+            <div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-bold font-mono text-slate-900 tracking-tight">
+                  {formatINR(breakdown.emi)}
+                </span>
+                <span className="text-xs text-slate-400 font-medium">/ month</span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Rate: {ratePct}% p.a. ({rateSource})
+              </p>
+            </div>
 
-            <div className="mt-4">
-              <Row label="Total interest" value={formatINR(breakdown.totalInterest)} mono />
-              <Row label="Total payable" value={formatINR(breakdown.totalPayable)} mono />
+            <div className="pt-2 border-t border-slate-100">
+              <Row label="Principal Amount" value={formatINR(amount)} mono />
+              <Row label="Total Interest" value={formatINR(breakdown.totalInterest)} mono />
+              <Row label="Total Payable" value={formatINR(breakdown.totalPayable)} mono />
             </div>
 
             {ratio !== null && bandCopy && (
-              <div className="flex items-start gap-2 mt-3 p-3 rounded-lg bg-slate-50 border border-slate-200">
-                <TrendingUp className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" aria-hidden="true" />
-                <p className="text-xs text-slate-600">
-                  That is{' '}
-                  <span className={`font-semibold ${bandCopy.className}`}>{ratio}%</span> of your
-                  declared monthly income —{' '}
-                  <span className={`font-semibold ${bandCopy.className}`}>
-                    {bandCopy.label.toLowerCase()}
-                  </span>
-                  .
+              <div className={`p-3 rounded-lg border text-xs ${bandCopy.className}`}>
+                <div className="flex items-center gap-1.5 font-semibold">
+                  <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+                  <span>{ratio}% of declared monthly income</span>
+                </div>
+                <p className="mt-1 text-[11px] opacity-90 leading-normal">
+                  {bandCopy.label} based on declared net income of {formatINR(income)}/mo.
                 </p>
               </div>
             )}
 
-            <p className="flex items-start gap-1.5 text-[11px] text-slate-400 mt-3 leading-relaxed">
-              <Info className="w-3.5 h-3.5 shrink-0 mt-px" aria-hidden="true" />
-              Calculated at {ratePct}% p.a. ({rateSource}) over {formatMonths(tenure)}. Your final
-              rate is set by the bank after verification.
-            </p>
-          </>
+            <div className="flex items-start gap-1.5 pt-1 text-[10px] text-slate-400 leading-normal">
+              <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              <span>Final interest rate & EMI will be confirmed by bank underwriting after document verification.</span>
+            </div>
+          </div>
         )}
       </section>
     </div>
   );
+
+  return (
+    <>
+      {/* Desktop Sticky Rail */}
+      <div className="hidden xl:block">
+        <SummaryContent />
+      </div>
+
+      {/* Mobile Collapsible Drawer Bar */}
+      <div className="xl:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-lg">
+        <button
+          type="button"
+          onClick={() => setMobileExpanded(!mobileExpanded)}
+          className="w-full flex items-center justify-between px-4 py-3 bg-slate-900 text-white cursor-pointer"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <Building2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div className="text-left min-w-0">
+              <p className="text-xs font-semibold truncate">
+                {bank?.name || 'Loan Application'} · {loanTypeDetail?.label || 'Summary'}
+              </p>
+              <p className="text-[11px] font-mono text-emerald-400 truncate">
+                {breakdown ? `${formatINR(breakdown.emi)}/mo` : 'Tap for EMI breakdown'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-slate-300">
+            <span>{mobileExpanded ? 'Hide' : 'View Summary'}</span>
+            {mobileExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+          </div>
+        </button>
+
+        {mobileExpanded && (
+          <div className="p-4 max-h-[70vh] overflow-y-auto bg-slate-50 border-t border-slate-200">
+            <SummaryContent />
+          </div>
+        )}
+      </div>
+    </>
+  );
 }
+

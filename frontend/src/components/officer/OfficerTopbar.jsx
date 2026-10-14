@@ -4,6 +4,8 @@ import LanguageSelector from '../common/LanguageSelector';
 import { ROUTES } from '../../constants/routes';
 import { initialsOf } from '../../lib/officerData';
 
+import { useLanguage } from '../../context/LanguageContext';
+
 /**
  * Officer topbar. Title and subtitle are derived from the route by OfficerLayout
  * so individual pages don't have to render their own page header.
@@ -16,6 +18,8 @@ export default function OfficerTopbar({
   alertCount = 0,
   onMenuClick = () => {},
 }) {
+  const { t } = useLanguage();
+
   return (
     <header className="sticky top-0 z-30 h-16 bg-white border-b border-slate-200">
       <div className="flex items-center gap-4 h-full px-4 lg:px-8">
@@ -38,7 +42,7 @@ export default function OfficerTopbar({
 
           <span className="hidden md:inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-full px-2.5 py-1">
             <Clock className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
-            Live queue
+            {t('live_queue', 'Live queue')}
           </span>
 
           <Link
@@ -66,9 +70,11 @@ export default function OfficerTopbar({
             </span>
             <span className="hidden md:block min-w-0">
               <span className="block text-sm font-medium text-slate-900 truncate max-w-[140px]">
-                {userName || 'Officer'}
+                {userName || t('bank_officer_title', 'Bank Underwriting Officer')}
               </span>
-              <span className="block text-[11px] text-slate-400 capitalize">{role}</span>
+              <span className="block text-[11px] text-slate-400 capitalize">
+                {t('bank_officer_title', 'Bank Underwriting Officer')}
+              </span>
             </span>
           </div>
         </div>

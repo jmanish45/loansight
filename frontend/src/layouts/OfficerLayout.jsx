@@ -8,6 +8,8 @@ import { officerService } from '../services/officerService';
 import { queueSummary, statusMeta } from '../lib/officerData';
 import { ROUTES } from '../constants/routes';
 
+import { useLanguage } from '../context/LanguageContext';
+
 /**
  * Frame shared by every officer screen. The application list is fetched once
  * here so the sidebar queue badges, the dashboard and the list page all read
@@ -15,6 +17,7 @@ import { ROUTES } from '../constants/routes';
  */
 export default function OfficerLayout() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const toast = useToast();
   const location = useLocation();
   const [params] = useSearchParams();
@@ -44,7 +47,9 @@ export default function OfficerLayout() {
   }, [load]);
 
   const removeApplication = useCallback((id) => {
-    setApplications((prev) => prev.filter((app) => app._id !== id));
+    setApplications((prev) =>
+      prev.filter((app) => String(app._id) !== String(id) && String(app.id) !== String(id))
+    );
   }, []);
 
   const summary = useMemo(() => queueSummary(applications), [applications]);
@@ -52,20 +57,20 @@ export default function OfficerLayout() {
   const statusParam = params.get('status') || '';
   const onDetails = /\/officer\/applications\/[^/]+$/.test(location.pathname);
 
-  let title = 'Officer Workspace';
+  let title = t('officer_workspace', 'Officer Workspace');
   let subtitle = '';
 
   if (onDetails) {
-    title = 'Application Review';
-    subtitle = 'Verify documents, run checks and record a decision';
+    title = t('application_review', 'Application Review');
+    subtitle = t('verify_documents_subtitle', 'Verify documents, run checks and record a decision');
   } else if (location.pathname.startsWith(ROUTES.OFFICER_APPLICATIONS)) {
-    title = statusParam ? statusMeta(statusParam).label : 'All Applications';
+    title = statusParam ? statusMeta(statusParam).label : t('all_applications', 'All Applications');
     subtitle = statusParam
-      ? 'Filtered work queue'
-      : 'Search, filter and open any loan request';
+      ? t('filtered_work_queue', 'Filtered work queue')
+      : t('search_filter_open', 'Search, filter and open any loan request');
   } else if (location.pathname === ROUTES.OFFICER) {
-    title = 'Verification Dashboard';
-    subtitle = 'Live queue, portfolio mix and recent activity';
+    title = t('queue_dashboard', 'Verification Dashboard');
+    subtitle = t('live_queue_portfolio', 'Live queue, portfolio mix and recent activity');
   }
 
   const outletContext = useMemo(

@@ -73,11 +73,13 @@ export function loanTypeLabel(loanType) {
   return String(loanType).replace(/^\w/, (c) => c.toUpperCase()) + ' Loan';
 }
 
-export function formatDate(value) {
+export function formatDate(value, lang) {
   if (!value) return '—';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  const activeLang = lang || (typeof window !== 'undefined' ? localStorage.getItem('loanlens_language') : null) || 'en';
+  const locale = activeLang === 'mr' ? 'mr-IN' : activeLang === 'hi' ? 'hi-IN' : 'en-IN';
+  return date.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 /** '3 days ago' style age, used to surface applications that have been waiting. */
